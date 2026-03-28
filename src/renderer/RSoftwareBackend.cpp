@@ -180,12 +180,12 @@ RSoftwareBackend::DrawRectangle(REntity_Rectangle& entity)
 }
 
 void
-RSoftwareBackend::DrawCircle(REntity_Circle& circle)
+RSoftwareBackend::DrawCircle(REntity_Circle& entity)
 {
     // center + radius
-    int32_t cx = m_renderer.WorldXToScreenX(circle.circle.x);
-    int32_t cy = m_renderer.WorldYToScreenY(circle.circle.y);
-    int32_t r = m_renderer.WorldXToScreenX(circle.circle.x + circle.circle.r) - m_renderer.WorldXToScreenX(circle.circle.x);
+    int32_t cx = m_renderer.WorldXToScreenX(entity.circle.x);
+    int32_t cy = m_renderer.WorldYToScreenY(entity.circle.y);
+    int32_t r = m_renderer.WorldXToScreenX(entity.circle.x + entity.circle.r) - m_renderer.WorldXToScreenX(entity.circle.x);
 
     // digital differential analyser variables
     int32_t r2 = r + r;
@@ -198,15 +198,15 @@ RSoftwareBackend::DrawCircle(REntity_Circle& circle)
     int32_t y = 0;
     int32_t x = r;
     while (y < x) {
-        DrawHorizontalLine_Screen(cx, cx + x, cy + y, circle.color);
-        DrawHorizontalLine_Screen(cx, cx - x, cy + y, circle.color);
-        DrawHorizontalLine_Screen(cx, cx + x, cy - y, circle.color);
-        DrawHorizontalLine_Screen(cx, cx - x, cy - y, circle.color);
+        DrawHorizontalLine_Screen(cx, cx + x, cy + y, entity.color);
+        DrawHorizontalLine_Screen(cx, cx - x, cy + y, entity.color);
+        DrawHorizontalLine_Screen(cx, cx + x, cy - y, entity.color);
+        DrawHorizontalLine_Screen(cx, cx - x, cy - y, entity.color);
 
-        DrawHorizontalLine_Screen(cx, cx + y, cy + x, circle.color);
-        DrawHorizontalLine_Screen(cx, cx - y, cy + x, circle.color);
-        DrawHorizontalLine_Screen(cx, cx + y, cy - x, circle.color);
-        DrawHorizontalLine_Screen(cx, cx - y, cy - x, circle.color);
+        DrawHorizontalLine_Screen(cx, cx + y, cy + x, entity.color);
+        DrawHorizontalLine_Screen(cx, cx - y, cy + x, entity.color);
+        DrawHorizontalLine_Screen(cx, cx + y, cy - x, entity.color);
+        DrawHorizontalLine_Screen(cx, cx - y, cy - x, entity.color);
 
         D += D_dy;
         D_dy += D_ddy;
