@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <common/shapes.hpp>
 #include <algorithm>
+#include <cassert>
 
 
 struct V2ST {
@@ -62,13 +63,11 @@ struct Color {
 inline bool
 Intersect_AABB_Circle(Rectangle rect, Circle circle)
 {
-    float xmin = std::min(rect.x0, rect.x1);
-    float xmax = std::max(rect.x0, rect.x1);
-    float ymin = std::min(rect.y0, rect.y1);
-    float ymax = std::max(rect.y0, rect.y1);
+    assert(rect.x0 <= rect.x1);
+    assert(rect.y0 <= rect.y1);
 
-    float closest_x = std::max(xmin, std::min(circle.x, xmax));
-    float closest_y = std::max(ymin, std::min(circle.y, ymax));
+    float closest_x = std::max(rect.x0, std::min(circle.x, rect.x1));
+    float closest_y = std::max(rect.y0, std::min(circle.y, rect.y1));
 
     float dx = closest_x - circle.x;
     float dy = closest_y - circle.y; 
