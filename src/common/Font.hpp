@@ -36,9 +36,9 @@ private:
 
 
 private:
-    static constexpr char first_ascii_ch = ' ';
-    static constexpr char last_ascii_ch = '~';
-    static constexpr char ascii_glyph_count = last_ascii_ch - first_ascii_ch + 1;
+    static constexpr char k_first_ascii_ch = ' ';
+    static constexpr char k_last_ascii_ch = '~';
+    static constexpr char k_ascii_glyph_count = k_last_ascii_ch - k_first_ascii_ch + 1;
 
 
     const char* m_file_content = nullptr;
@@ -48,7 +48,7 @@ private:
     int m_font_baseline;
     int m_font_yadvance;
 
-    Glyph m_glyphs[ascii_glyph_count];
+    Glyph m_glyphs[k_ascii_glyph_count];
     Glyph m_fail_glyph;
 };
 

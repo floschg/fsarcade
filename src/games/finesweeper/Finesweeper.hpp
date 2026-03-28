@@ -43,8 +43,8 @@ private:
 
 
 private:
-    static constexpr int32_t s_max_grid_height = 32;
-    static constexpr int32_t s_max_grid_width = 32;
+    static constexpr int32_t k_max_grid_width = 32;
+    static constexpr int32_t k_max_grid_height = 32;
 
 
 private:
@@ -61,10 +61,10 @@ private:
     V2F32 m_cell_outer_size;
     V2F32 m_cell_inner_size;
 
-    uint32_t m_is_covered_bitmap[s_max_grid_height] {};
-    uint32_t m_is_flagged_bitmap[s_max_grid_height] {};
-    uint32_t m_is_mine_bitmap[s_max_grid_height] {};
-    int32_t m_adjacent_mine_counts[s_max_grid_width * s_max_grid_height] {};
+    uint32_t m_is_covered_bitmap[k_max_grid_height] {};
+    uint32_t m_is_flagged_bitmap[k_max_grid_height] {};
+    uint32_t m_is_mine_bitmap[k_max_grid_height] {};
+    int32_t m_adjacent_mine_counts[k_max_grid_width * k_max_grid_height] {};
 
     Font m_font;
 };

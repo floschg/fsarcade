@@ -7,7 +7,7 @@
 #include <random>
 
 
-static constexpr Color s_mine_count_colors[8] = {
+static constexpr Color k_mine_count_colors[8] = {
     {0.0f, 0.0f, 1.0f, 1.0f}, // Blue
     {0.0f, 0.5f, 0.0f, 1.0f}, // Green
     {1.0f, 0.0f, 0.0f, 1.0f}, // Red
@@ -20,9 +20,9 @@ static constexpr Color s_mine_count_colors[8] = {
 
 
 Finesweeper::Finesweeper()
-    : m_font{s_dejavu_sans_filepath, 22}
+    : m_font{k_dejavu_sans_filepath, 22}
 {
-    float cell_size = 1.2f * std::min(m_world_height / s_max_grid_height, m_world_width / s_max_grid_width);
+    float cell_size = 1.2f * std::min(m_world_height / k_max_grid_height, m_world_width / k_max_grid_width);
     float cell_size_without_border = 0.8f * cell_size;
 
     m_cell_outer_size = {cell_size, cell_size};
@@ -48,8 +48,8 @@ Finesweeper::Start()
         m_grid_height = 16;
         m_mine_count = 99;
     }
-    assert(m_grid_width <= s_max_grid_width);
-    assert(m_grid_height <= s_max_grid_height);
+    assert(m_grid_width <= k_max_grid_width);
+    assert(m_grid_height <= k_max_grid_height);
 
 
     float grid_draw_width = (float)m_grid_width * m_cell_outer_size.x;
@@ -332,7 +332,7 @@ Finesweeper::Draw()
                     };
                     int32_t mine_count = m_adjacent_mine_counts[y*m_grid_width + x];
                     if (mine_count > 0) {
-                        Color color = s_mine_count_colors[mine_count-1];
+                        Color color = k_mine_count_colors[mine_count-1];
                         Glyph& glyph = m_font.GetGlyph('0' + (char32_t)mine_count);
                         g_renderer.PushAlphaBitmap(glyph.bitmap, mine_count_pos, color, z);
                     }
@@ -367,7 +367,7 @@ Finesweeper::DrawGameStartMenu()
 void
 Finesweeper::DrawGameOverMenu()
 {
-    ImGui::Begin("FinesweeperGameOverMenu", nullptr, s_imgui_window_flags_menu);
+    ImGui::Begin("FinesweeperGameOverMenu", nullptr, k_imgui_window_flags_menu);
     if (IsWon()) {
         ImGui::Text("You won!");
     }

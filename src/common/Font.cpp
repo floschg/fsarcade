@@ -44,8 +44,8 @@ Font::Font(const char *path, int font_size)
 
 
     // load glyphs
-    for (char c = first_ascii_ch; c <= last_ascii_ch; ++c) {
-        InitGlyph(m_glyphs[c-first_ascii_ch], static_cast<char32_t>(c));
+    for (char c = k_first_ascii_ch; c <= k_last_ascii_ch; ++c) {
+        InitGlyph(m_glyphs[c-k_first_ascii_ch], static_cast<char32_t>(c));
     }
     memset((void*)&m_fail_glyph, 0, sizeof(m_fail_glyph));
 }
@@ -126,7 +126,7 @@ Font::GetAlphaBitmap(char32_t c)
 {
     if (m_file_content) {
         if (is_ch_ascii(c)) {
-            return m_glyphs[c - first_ascii_ch].bitmap;
+            return m_glyphs[c - k_first_ascii_ch].bitmap;
         }
     }
 
@@ -138,7 +138,7 @@ Font::GetGlyph(char32_t c)
 {
     if (m_file_content) {
         if (is_ch_ascii(c)) {
-            return m_glyphs[c - first_ascii_ch];
+            return m_glyphs[c - k_first_ascii_ch];
         }
     }
     

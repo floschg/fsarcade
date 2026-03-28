@@ -106,7 +106,7 @@ Game::DrawGameStartMenu()
 void
 Game::DrawGameOverMenu()
 {
-    ImGui::Begin("DefaultGameOverMenu", nullptr, s_imgui_window_flags_menu);
+    ImGui::Begin("DefaultGameOverMenu", nullptr, k_imgui_window_flags_menu);
     ImGui::Text("Game Over.");
     if (ImGui::Button("Play Again")) {
         m_game_status = game_start;
@@ -120,7 +120,7 @@ Game::DrawGameOverMenu()
 void
 Game::DrawGamePauseMenu()
 {
-    ImGui::Begin("DefaultGamePauseMenu", nullptr, s_imgui_window_flags_menu);
+    ImGui::Begin("DefaultGamePauseMenu", nullptr, k_imgui_window_flags_menu);
     if (ImGui::Button("Resume")) {
         m_game_status = game_resume;
     }

@@ -15,7 +15,7 @@
 
 
 Fetris::Fetris()
-    : m_font{s_dejavu_sans_mono_filepath, 22}
+    : m_font{k_dejavu_sans_mono_filepath, 22}
     , m_active_fetromino{m_board.m_bitmap}
     , m_highscore {ReadHighscore()}
 {
@@ -160,7 +160,7 @@ int32_t
 Fetris::ReadHighscore()
 {
     int32_t highscore = 0;
-    std::ifstream highscore_file_in {s_fetris_highscore_path};
+    std::ifstream highscore_file_in {k_highscore_filepath};
     if (highscore_file_in) {
         highscore_file_in >> highscore;
         highscore_file_in.close();
@@ -171,13 +171,13 @@ Fetris::ReadHighscore()
 void
 Fetris::WriteHighscore()
 {
-    std::ofstream highscore_file_out {s_fetris_highscore_path};
+    std::ofstream highscore_file_out {k_highscore_filepath};
     if (highscore_file_out) {
         highscore_file_out << m_highscore << std::endl;
         highscore_file_out.close();
     }
     else {
-        SDL_LogInfo(0, "Fetris: cannot open %s for writing", s_fetris_highscore_path);
+        SDL_LogInfo(0, "Fetris: cannot open %s for writing", k_highscore_filepath);
     }
 }
 
@@ -197,7 +197,7 @@ Fetris::Draw()
 void
 Fetris::DrawGameOverMenu()
 {
-    ImGui::Begin("FetrisGameOver", nullptr, s_imgui_window_flags_menu);
+    ImGui::Begin("FetrisGameOver", nullptr, k_imgui_window_flags_menu);
     ImGui::Text("Score = %d", m_score);
     ImGui::Text("HighScore = %d", m_highscore);
     if (ImGui::Button("Restart")) {
@@ -242,7 +242,7 @@ Fetris::DrawStatistics()
 
     String32Id title_text = MemoryManager::EmplaceString32_Frame(U"Statistics");
     V2F32 title_pos = {pos.x + 0.02f, pos.y + 1.64f};
-    g_renderer.PushString32(title_text, m_font, title_pos, s_text_color, z_text);
+    g_renderer.PushString32(title_text, m_font, title_pos, k_text_color, z_text);
 
     float yadvance = -0.2f;
     float fetrominoes_x0 = pos.x;
@@ -286,19 +286,19 @@ Fetris::DrawStatistics()
     String32Id l_count = MemoryManager::EmplaceString32_Frame(int32_to_u32string(m_fetromino_counters[Fetromino::l_piece]));
     String32Id i_count = MemoryManager::EmplaceString32_Frame(int32_to_u32string(m_fetromino_counters[Fetromino::i_piece]));
 
-    g_renderer.PushString32(t_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(t_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(j_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(j_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(z_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(z_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(o_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(o_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(s_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(s_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(l_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(l_count, m_font, counters_pos, k_text_color, z_text);
     counters_pos.y += yadvance;
-    g_renderer.PushString32(i_count, m_font, counters_pos, s_text_color, z_text);
+    g_renderer.PushString32(i_count, m_font, counters_pos, k_text_color, z_text);
 }
 
 void
@@ -314,14 +314,14 @@ Fetris::DrawScore()
     String32Id score_value = MemoryManager::EmplaceString32_Frame(int32_to_u32string(m_score));
 
 
-    g_renderer.PushString32(top_label, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(top_label, m_font, pos, k_text_color, z_text);
     pos.y -= 0.1f;
-    g_renderer.PushString32(top_value, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(top_value, m_font, pos, k_text_color, z_text);
     pos.y -= 0.2f;
 
-    g_renderer.PushString32(score_label, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(score_label, m_font, pos, k_text_color, z_text);
     pos.y -= 0.1f;
-    g_renderer.PushString32(score_value, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(score_value, m_font, pos, k_text_color, z_text);
 }
 
 void
@@ -332,7 +332,7 @@ Fetris::DrawNextFetromino()
 
     V2F32 label_pos = {pos.x, pos.y + 0.4f};
     String32Id label_text = MemoryManager::EmplaceString32_Frame(U"Next:");
-    g_renderer.PushString32(label_text, m_font, label_pos, s_text_color, z_layer1);
+    g_renderer.PushString32(label_text, m_font, label_pos, k_text_color, z_layer1);
 
 
     V2F32 fetromino_pos = {pos.x, pos.y};
@@ -345,10 +345,10 @@ Fetris::DrawLevel()
     V2F32 pos = {3.0f, 1.1f};
 
     String32Id label = MemoryManager::EmplaceString32_Frame(U"Level");
-    g_renderer.PushString32(label, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(label, m_font, pos, k_text_color, z_text);
     pos.y -= 0.1f;
 
     String32Id level = MemoryManager::EmplaceString32_Frame(int32_to_u32string(m_level));
-    g_renderer.PushString32(level, m_font, pos, s_text_color, z_text);
+    g_renderer.PushString32(level, m_font, pos, k_text_color, z_text);
 }
 

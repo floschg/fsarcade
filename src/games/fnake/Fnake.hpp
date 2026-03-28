@@ -34,12 +34,11 @@ private:
     void HandleGameOver();
 
 
-
 private:
-    static constexpr int32_t max_map_width = 14;
-    static constexpr int32_t max_map_height = 14;
-    static constexpr float tiles_per_second = 4.0f;
-    static constexpr char highscore_path[] = "fnake_highscore.txt";
+    static constexpr int32_t k_max_map_width = 14;
+    static constexpr int32_t k_max_map_height = 14;
+    static constexpr float k_tiles_per_second = 4.0f;
+    static constexpr char k_highscore_path[] = "fnake_highscore.txt";
 
     Font m_font;
 
@@ -52,7 +51,7 @@ private:
     int32_t m_map_width;
     int32_t m_map_height;
 
-    uint64_t m_body_bitmap[max_map_height];
+    uint64_t m_body_bitmap[k_max_map_height];
     std::deque<V2I32> m_body_positions;
 
     V2I32 m_food_position;

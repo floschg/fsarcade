@@ -35,9 +35,8 @@ private:
 
 
 private:
-    static constexpr Color s_text_color {0.9f, 0.9f, 0.9f, 1.0f};
-    static constexpr size_t s_frame_strings_capacity {32};
-    static constexpr char s_fetris_highscore_path[]{"fetris_highscore.txt"};
+    static constexpr Color k_text_color {0.9f, 0.9f, 0.9f, 1.0f};
+    static constexpr char k_highscore_filepath[]{"fetris_highscore.txt"};
 
     Font m_font;
     Board m_board;

@@ -62,11 +62,11 @@ protected:
 
 
 protected:
-    static constexpr const char* s_dejavu_sans_filepath = "./fonts/dejavu_ttf/DejaVuSans.ttf";
-    static constexpr const char* s_dejavu_sans_mono_filepath = "./fonts/dejavu_ttf/DejaVuSansMono.ttf";
+    static constexpr const char* k_dejavu_sans_filepath = "./fonts/dejavu_ttf/DejaVuSans.ttf";
+    static constexpr const char* k_dejavu_sans_mono_filepath = "./fonts/dejavu_ttf/DejaVuSansMono.ttf";
 
-    static constexpr ImGuiWindowFlags s_imgui_window_flags_menu = ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_AlwaysAutoResize;
-    static constexpr ImGuiWindowFlags s_imgui_window_flags_default = ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar;
+    static constexpr ImGuiWindowFlags k_imgui_window_flags_menu = ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_AlwaysAutoResize;
+    static constexpr ImGuiWindowFlags k_imgui_window_flags_default = ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar;
 
 
 private:

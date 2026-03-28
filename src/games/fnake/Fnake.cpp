@@ -11,11 +11,11 @@
 
 
 Fnake::Fnake()
-    : m_font {s_dejavu_sans_mono_filepath, 22}
+    : m_font {k_dejavu_sans_mono_filepath, 22}
     , m_rng {std::random_device{}()}
 {
-    static_assert(max_map_width <= sizeof(m_body_bitmap[0])*8);
-    static_assert(max_map_height <= sizeof(m_body_bitmap[0])*8);
+    static_assert(k_max_map_width <= sizeof(m_body_bitmap[0])*8);
+    static_assert(k_max_map_height <= sizeof(m_body_bitmap[0])*8);
 
     int32_t highscore = 0;
     std::ifstream highscore_file_in {"fnake_highscore.txt"};
@@ -38,8 +38,8 @@ Fnake::Start()
 
     m_map_width = 12;
     m_map_height = 10;
-    assert(m_map_width <= max_map_width);
-    assert(m_map_height <= max_map_height);
+    assert(m_map_width <= k_max_map_width);
+    assert(m_map_height <= k_max_map_height);
 
     memset(m_body_bitmap, 0, sizeof(m_body_bitmap));
 
@@ -63,7 +63,7 @@ Fnake::Update(float dt)
 void
 Fnake::MaybeMoveBody(float dt)
 {
-    float seconds_per_tile = 1.0f / tiles_per_second;
+    float seconds_per_tile = 1.0f / k_tiles_per_second;
     while (dt > seconds_per_tile) {
         V2I32 head_pos = m_body_positions.front();
         V2I32 tail_pos = m_body_positions.back();
@@ -129,13 +129,13 @@ Fnake::HandleGameOver()
     if (m_score > m_highscore) {
         m_highscore = m_score;
 
-        std::ofstream highscore_file_out {highscore_path};
+        std::ofstream highscore_file_out {k_highscore_path};
         if (highscore_file_out) {
             highscore_file_out << m_highscore << std::endl;
             highscore_file_out.close();
         }
         else {
-            SDL_LogInfo(0, "Fnake: cannot open %s for writing", highscore_path);
+            SDL_LogInfo(0, "Fnake: cannot open %s for writing", k_highscore_path);
         }
     }
 }
@@ -182,7 +182,7 @@ Fnake::ProcessEvent(SDL_Event& event)
 void
 Fnake::SpawnFood()
 {
-    int32_t bit0_counts[max_map_height];
+    int32_t bit0_counts[k_max_map_height];
     int32_t bit0_count_total = 0;
 
     // count bits
@@ -239,7 +239,7 @@ Fnake::Draw()
 {
     float world_width = 4.0f;
     float world_height = 3.0f;
-    float tile_size = (world_width / 2) / max_map_width;
+    float tile_size = (world_width / 2) / k_max_map_width;
 
     float bodypart_size = 0.8f * tile_size;
     float bodypart_offset = (tile_size - bodypart_size) / 2;

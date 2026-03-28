@@ -6,7 +6,7 @@
 
 // layout of a left_aligned_bitmap: xxxx000000000000
 // layout of a board_bitmap is 111xxxxxxxxxx111
-static const uint16_t s_left_aligned_bitmaps[7][4][4] = {
+static const uint16_t k_left_aligned_bitmaps[7][4][4] = {
     {
         // O piece
         {0x6000, 0x6000, 0x0000, 0x0000}, // orientation 0
@@ -170,7 +170,7 @@ Fetromino::IsCollisionWithBoard(Id id, BoardPos pos, int32_t ori, uint16_t *boar
 void
 Fetromino::GetBitmap(Id id, BoardPos pos, int32_t ori, uint16_t *bitmap)
 {
-    uint64_t *src  = (uint64_t*)s_left_aligned_bitmaps[id][ori];
+    uint64_t *src  = (uint64_t*)k_left_aligned_bitmaps[id][ori];
     uint64_t *dest = (uint64_t*)bitmap;
     *dest = *src >> pos.x;
 }
@@ -208,7 +208,7 @@ Fetromino::Draw(Id id, int32_t ori, V2F32 pos, float scale)
     float fetromino_size = 0.8f * fetromino_size_with_border;
     float fetromino_offset = 0.1f * fetromino_size_with_border;
 
-    uint16_t *left_aligned_bitmap = (uint16_t*)s_left_aligned_bitmaps[id][ori];
+    uint16_t *left_aligned_bitmap = (uint16_t*)k_left_aligned_bitmaps[id][ori];
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 4; x++) {
             if (left_aligned_bitmap[y] & (0x8000 >> x)) {
