@@ -197,16 +197,23 @@ RSoftwareBackend::DrawCircle(REntity_Circle& entity)
 
     int32_t y = 0;
     int32_t x = r;
-    while (y < x) {
+    while (y <= x) {
+        // top,  0-45 degrees
         DrawHorizontalLine_Screen(cx, cx + x, cy + y, entity.color);
         DrawHorizontalLine_Screen(cx, cx - x, cy + y, entity.color);
+
+        // top, 45-90 degrees
+        DrawHorizontalLine_Screen(cx, cx + y, cy + x, entity.color);
+        DrawHorizontalLine_Screen(cx, cx - y, cy + x, entity.color);
+
+        // bot,  0-45 degrees
         DrawHorizontalLine_Screen(cx, cx + x, cy - y, entity.color);
         DrawHorizontalLine_Screen(cx, cx - x, cy - y, entity.color);
 
-        DrawHorizontalLine_Screen(cx, cx + y, cy + x, entity.color);
-        DrawHorizontalLine_Screen(cx, cx - y, cy + x, entity.color);
+        // bot, 45-90 degrees
         DrawHorizontalLine_Screen(cx, cx + y, cy - x, entity.color);
         DrawHorizontalLine_Screen(cx, cx - y, cy - x, entity.color);
+
 
         D += D_dy;
         D_dy += D_ddy;
