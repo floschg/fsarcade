@@ -59,6 +59,7 @@ RSoftwareBackend::Draw()
         }; break;
 
         case REntityType_Circle: {
+            DrawCircle(entity.circle);
         }; break;
 
         default:;
@@ -185,6 +186,48 @@ RSoftwareBackend::DrawRectangle(REntity_Rectangle& entity)
     }
 }
 
+void
+RSoftwareBackend::DrawCircle(REntity_Circle& circle)
+{
+    // center + radius
+    int32_t cx = m_renderer.WorldXToScreenX(circle.circle.x);
+    int32_t cy = m_renderer.WorldYToScreenY(circle.circle.y);
+    int32_t r = m_renderer.WorldXToScreenX(circle.circle.x + circle.circle.r) - m_renderer.WorldXToScreenX(circle.circle.x);
+
+    // digital differential analyser variables
+    int32_t r2 = r + r;
+    int32_t D = r2 - 1;
+    int32_t D_dy  = -2;
+    int32_t D_ddy = -4;
+    int32_t D_dx  = r2 + r2 -4;
+    int32_t D_ddx = -4;
+
+    int32_t y = 0;
+    int32_t x = r;
+    while (y < x) {
+        DrawHorizontalLine_Screen(cx, cx + x, cy + y, circle.color);
+        DrawHorizontalLine_Screen(cx, cx - x, cy + y, circle.color);
+        DrawHorizontalLine_Screen(cx, cx + x, cy - y, circle.color);
+        DrawHorizontalLine_Screen(cx, cx - x, cy - y, circle.color);
+
+        DrawHorizontalLine_Screen(cx, cx + y, cy + x, circle.color);
+        DrawHorizontalLine_Screen(cx, cx - y, cy + x, circle.color);
+        DrawHorizontalLine_Screen(cx, cx + y, cy - x, circle.color);
+        DrawHorizontalLine_Screen(cx, cx - y, cy - x, circle.color);
+
+        D += D_dy;
+        D_dy += D_ddy;
+        y++;
+
+        // if moving left:     all bits are 1
+        // if not moving left: all bits are 0
+        // all bits 1 also represents -1, so we can add it to x
+        int32_t mask = D >> 31;
+        D += D_dx & mask;
+        D_dx += D_ddx & mask;
+        x += mask;
+    }
+}
 
 void
 RSoftwareBackend::DrawAlphaBitmap(REntity_AlphaBitmap& entity)
@@ -323,6 +366,25 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
 
         alpha_row += glyph.bitmap.w;
         rgba_row += m_canvas.w;
+    }
+}
+
+void
+RSoftwareBackend::DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, Color color)
+{
+    if (y < 0 || y >= m_canvas.h) {
+        return;
+    }
+
+    uint32_t r = uint32_t(color.r * 255.0f) << m_canvas.rshift;
+    uint32_t g = uint32_t(color.g * 255.0f) << m_canvas.gshift;
+    uint32_t b = uint32_t(color.b * 255.0f) << m_canvas.bshift;
+    uint32_t pixel_val = r | g | b;
+
+    int32_t xmin = std::max(std::min(x0, x1), 0);
+    int32_t xmax = std::min(std::max(x0, x1), m_canvas.w-1);
+    for (int32_t x = xmin; x < xmax; x++) {
+        m_canvas.pixels[y * m_canvas.w + x] = pixel_val;
     }
 }
 

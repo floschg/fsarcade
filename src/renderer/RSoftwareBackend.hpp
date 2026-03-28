@@ -30,10 +30,12 @@ private:
 
     void DrawClear();
     void DrawRectangle(REntity_Rectangle& entity);
+    void DrawCircle(REntity_Circle& circle);
     void DrawAlphaBitmap(REntity_AlphaBitmap& entity);
     void DrawFrameString32(REntity_String32& entity);
     void DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int32_t yscreen);
 
+    void DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, Color color);
 
 private:
     Renderer& m_renderer;
