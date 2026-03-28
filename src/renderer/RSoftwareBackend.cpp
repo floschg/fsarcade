@@ -123,14 +123,11 @@ void
 RSoftwareBackend::DrawClear()
 {
     Color color = m_renderer.m_clear_color;
-    uint32_t rshift = m_canvas.rshift;
-    uint32_t gshift = m_canvas.gshift;
-    uint32_t bshift = m_canvas.bshift;
 
-    uint32_t r = static_cast<uint32_t>(color.r * 255.0f);
-    uint32_t g = static_cast<uint32_t>(color.g * 255.0f);
-    uint32_t b = static_cast<uint32_t>(color.b * 255.0f);
-    uint32_t val = r << rshift | g << gshift | b << bshift;
+    uint32_t r = static_cast<uint32_t>(color.r * 255.0f) << m_canvas.rshift;
+    uint32_t g = static_cast<uint32_t>(color.g * 255.0f) << m_canvas.gshift;
+    uint32_t b = static_cast<uint32_t>(color.b * 255.0f) << m_canvas.bshift;
+    uint32_t val = r | g | b;
 
     size_t pixel_count = size_t(m_canvas.w) * size_t(m_canvas.h);
     size_t chunk_count = pixel_count / 8;
@@ -169,14 +166,10 @@ RSoftwareBackend::DrawRectangle(REntity_Rectangle& entity)
         ymax = m_canvas.h - 1;
     }
 
-    uint32_t rshift = m_canvas.rshift;
-    uint32_t gshift = m_canvas.gshift;
-    uint32_t bshift = m_canvas.bshift;
-
-    uint32_t r = (uint32_t)(entity.color.r * 255.0f);
-    uint32_t g = (uint32_t)(entity.color.g * 255.0f);
-    uint32_t b = (uint32_t)(entity.color.b * 255.0f);
-    uint32_t val = r << rshift | g << gshift | b << bshift;
+    uint32_t r = static_cast<uint32_t>(entity.color.r * 255.0f) << m_canvas.rshift;
+    uint32_t g = static_cast<uint32_t>(entity.color.g * 255.0f) << m_canvas.gshift;
+    uint32_t b = static_cast<uint32_t>(entity.color.b * 255.0f) << m_canvas.bshift;
+    uint32_t val = r | g | b;
 
     for (int32_t y = ymin; y <= ymax; ++y) {
         uint32_t *pixel = m_canvas.pixels + y * m_canvas.w + xmin;
@@ -274,10 +267,9 @@ RSoftwareBackend::DrawAlphaBitmap(REntity_AlphaBitmap& entity)
             float g1 = entity.color.g * alphaf;
             float b1 = entity.color.b * alphaf;
 
-            uint32_t r2 = uint32_t(r1 * 255.0f) << m_canvas.rshift;
-            uint32_t g2 = uint32_t(g1 * 255.0f) << m_canvas.gshift;
-            uint32_t b2 = uint32_t(b1 * 255.0f) << m_canvas.bshift;
-
+            uint32_t r2 = static_cast<uint32_t>(r1 * 255.0f) << m_canvas.rshift;
+            uint32_t g2 = static_cast<uint32_t>(g1 * 255.0f) << m_canvas.gshift;
+            uint32_t b2 = static_cast<uint32_t>(b1 * 255.0f) << m_canvas.bshift;
             uint32_t rgba_result = r2 | g2 | b2;
             *rgba = rgba_result;
 
@@ -353,10 +345,9 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
             float g1 = color.g * alphaf;
             float b1 = color.b * alphaf;
 
-            uint32_t r2 = uint32_t(r1 * 255.0f) << m_canvas.rshift;
-            uint32_t g2 = uint32_t(g1 * 255.0f) << m_canvas.gshift;
-            uint32_t b2 = uint32_t(b1 * 255.0f) << m_canvas.bshift;
-
+            uint32_t r2 = static_cast<uint32_t>(r1 * 255.0f) << m_canvas.rshift;
+            uint32_t g2 = static_cast<uint32_t>(g1 * 255.0f) << m_canvas.gshift;
+            uint32_t b2 = static_cast<uint32_t>(b1 * 255.0f) << m_canvas.bshift;
             uint32_t rgba_result = r2 | g2 | b2;
             *rgba = rgba_result;
 
@@ -376,9 +367,9 @@ RSoftwareBackend::DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, C
         return;
     }
 
-    uint32_t r = uint32_t(color.r * 255.0f) << m_canvas.rshift;
-    uint32_t g = uint32_t(color.g * 255.0f) << m_canvas.gshift;
-    uint32_t b = uint32_t(color.b * 255.0f) << m_canvas.bshift;
+    uint32_t r = static_cast<uint32_t>(color.r * 255.0f) << m_canvas.rshift;
+    uint32_t g = static_cast<uint32_t>(color.g * 255.0f) << m_canvas.gshift;
+    uint32_t b = static_cast<uint32_t>(color.b * 255.0f) << m_canvas.bshift;
     uint32_t pixel_val = r | g | b;
 
     int32_t xmin = std::max(std::min(x0, x1), 0);
