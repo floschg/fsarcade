@@ -1,7 +1,6 @@
 #include "renderer/Renderer.hpp"
 #include "renderer/RSoftwareBackend.hpp"
 
-#include <GL/glew.h>
 #include <imgui.h>
 
 #include <memory>
