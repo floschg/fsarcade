@@ -29,7 +29,7 @@ private:
     void DrawGameOverMenu() override;
 
 
-    void InitIsMineBitmap();
+    void InitIsMineBitmap(int32_t first_click_x, int32_t first_click_y);
     void InitAdjacentMineCounters();
     bool IsWon();
 

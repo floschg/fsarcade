@@ -62,20 +62,21 @@ Finesweeper::Start()
 
     memset(m_is_covered_bitmap, 0xff, sizeof(m_is_covered_bitmap));
     memset(m_is_flagged_bitmap, 0 , sizeof(m_is_flagged_bitmap));
-    InitIsMineBitmap();
-    InitAdjacentMineCounters();
 
     m_game_status = game_resume;
 }
 
 void
-Finesweeper::InitIsMineBitmap()
+Finesweeper::InitIsMineBitmap(int32_t first_click_x, int32_t first_click_y)
 {
-    assert(m_mine_count < m_grid_width * m_grid_height);
+    assert(m_mine_count < m_grid_width * m_grid_height - 2);
     memset(m_is_mine_bitmap, 0 , sizeof(m_is_mine_bitmap));
 
     std::mt19937 rng((std::random_device()()));
     std::uniform_int_distribution<int32_t> dist(0, m_grid_width * m_grid_height - 1);
+
+
+    m_is_mine_bitmap[first_click_y] |= 1 << first_click_x;
 
     int32_t mine_count = m_mine_count;
     while (mine_count) {
@@ -87,6 +88,8 @@ Finesweeper::InitIsMineBitmap()
             mine_count--;
         }
     }
+
+    m_is_mine_bitmap[first_click_y] &= ~(1u << first_click_x);
 }
 
 void
@@ -159,6 +162,11 @@ Finesweeper::ProcessEvent(SDL_Event& event)
         uint8_t left_click = 1;
         uint8_t right_click = 3;
         if (event.button.button == left_click) {
+            if (m_cells_uncovered == 0) {
+                InitIsMineBitmap(x, y);
+                InitAdjacentMineCounters();
+            }
+
             if (IsCovered(x, y)) {
                 if (IsMine(x, y)) {
                     m_is_covered_bitmap[y] &= (uint32_t)~(1 << x);
