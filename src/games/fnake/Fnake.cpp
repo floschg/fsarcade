@@ -38,13 +38,15 @@ Fnake::Start()
     m_next_direction = right;
     m_tile_progress = 0.0f;
 
-    memset(m_body_bitmap, 0, sizeof(m_body_bitmap));
-
     int32_t head_x = k_tiles_x / 2;
     int32_t head_y = k_tiles_y / 2;
     m_body_parts.clear();
     m_body_parts.emplace_front(V2I32{head_x-1, head_y}, right, none);
     m_body_parts.emplace_front(V2I32{head_x, head_y}, none, left);
+
+    memset(m_body_bitmap, 0, sizeof(m_body_bitmap));
+    m_body_bitmap[head_y] |= (1 << head_x);
+    m_body_bitmap[head_y] |= (1 << (head_x-1));
 
     SpawnFood();
 
@@ -105,17 +107,18 @@ Fnake::MoveBody(float dt)
         m_body_parts.emplace_front(head_pos, none, (Direction)-m_next_direction);
 
 
-        // eat food or advance tail
         if (m_body_parts.front().tile_pos == m_food_tile_pos) {
             // eat food
             m_score += 1;
             SpawnFood();
+            m_body_parts.back().next_direction_to_tail = none;
         }
         else {
             // advance tail
+            auto vanishing_tail = m_body_parts.back();
             m_body_bitmap[tail_pos.y] &= (uint32_t)~(1 << tail_pos.x);
             m_body_parts.pop_back();
-            m_body_parts.back().next_direction_to_tail = none;
+            m_body_parts.back().next_direction_to_tail = (Direction)-vanishing_tail.next_direction_to_head;
         }
 
 
@@ -333,24 +336,65 @@ Fnake::DrawBody()
         };
 
 
-        Direction next_direction_to_tail = curr->next_direction_to_tail;
-        if (next_direction_to_tail == up) {
-            DrawBodyConnectionUp(rect_curr, rect_next.y0);
-        }
-        else if (next_direction_to_tail == down) {
-            DrawBodyConnectionDown(rect_curr, rect_next.y1);
-        }
-        else if (next_direction_to_tail == right) {
-            DrawBodyConnectionRight(rect_curr, rect_next.x0);
-        }
-        else if (next_direction_to_tail == left) {
-            DrawBodyConnectionLeft(rect_curr, rect_next.x1);
+        if (next != m_body_parts.end()) { // don't draw connection to vanishing tail
+            Direction next_direction_to_tail = curr->next_direction_to_tail;
+            if (next_direction_to_tail == up) {
+                DrawBodyConnectionUp(rect_curr, rect_next.y0);
+            }
+            else if (next_direction_to_tail == down) {
+                DrawBodyConnectionDown(rect_curr, rect_next.y1);
+            }
+            else if (next_direction_to_tail == right) {
+                DrawBodyConnectionRight(rect_curr, rect_next.x0);
+            }
+            else if (next_direction_to_tail == left) {
+                DrawBodyConnectionLeft(rect_curr, rect_next.x1);
+            }
         }
 
 
         curr = next;
         next = next + 1;
         rect_curr = rect_next;
+    }
+
+
+    // draw vanishing tail
+    {
+        BodyPart tail = m_body_parts.back();
+        float tail_x0 = TilemapXToWorldX(tail.tile_pos.x) + bodypart_offset;
+        float tail_y0 = TilemapYToWorldY(tail.tile_pos.y) + bodypart_offset;
+        float tail_x1 = tail_x0 + bodypart_size;
+        float tail_y1 = tail_y0 + bodypart_size;
+        float progress_size = (1.0f-m_tile_progress) * k_tile_size;
+        Rectangle vanishing_tail_rect;
+        if (tail.next_direction_to_tail == up) {
+            vanishing_tail_rect.x0 = tail_x0;
+            vanishing_tail_rect.y0 = tail_y1;
+            vanishing_tail_rect.x1 = tail_x1;
+            vanishing_tail_rect.y1 = tail_y1 + progress_size;
+        }
+        else if (tail.next_direction_to_tail == down) {
+            vanishing_tail_rect.x0 = tail_x0;
+            vanishing_tail_rect.y0 = tail_y0 - progress_size;
+            vanishing_tail_rect.x1 = tail_x1;
+            vanishing_tail_rect.y1 = tail_y0;
+        }
+        else if (tail.next_direction_to_tail == right) {
+            vanishing_tail_rect.x0 = tail_x1;
+            vanishing_tail_rect.y0 = tail_y0;
+            vanishing_tail_rect.x1 = tail_x1 + progress_size;
+            vanishing_tail_rect.y1 = tail_y1;
+        }
+        else if (tail.next_direction_to_tail == left) {
+            vanishing_tail_rect.x0 = tail_x0 - progress_size;
+            vanishing_tail_rect.y0 = tail_y0;
+            vanishing_tail_rect.x1 = tail_x0;
+            vanishing_tail_rect.y1 = tail_y1;
+        }
+        if (tail.next_direction_to_tail != none) {
+            g_renderer.PushRectangle(vanishing_tail_rect, k_color_body, k_z_body);
+        }
     }
 }
 
