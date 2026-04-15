@@ -48,6 +48,14 @@ Freakout::Start()
         y += brick_h + brick_ygap;
     }
 
+    uint32_t brick_bitmap_initializer = 0x3fff; // 14 bits that are 1
+    static_assert(k_brick_cols <= sizeof(m_brick_bitmap[0])*8); // e.g. 8*4bytes = 32bit
+    for (size_t i = 0; i < k_brick_cols; i++) {
+        m_brick_bitmap[i] = brick_bitmap_initializer;
+    }
+
+    m_bricks_left = k_brick_rows * k_brick_cols;
+    m_score = 0;
 
     m_game_status = game_resume;
 }
@@ -62,10 +70,10 @@ Freakout::ProcessEvent(SDL_Event& event)
             m_game_status = game_pause;
         }
         else if (key == SDLK_RIGHT || key == SDLK_D) {
-            m_paddle.dx = 1.0f;
+            m_paddle.dx = k_paddle_speed;
         }
         else if (key == SDLK_LEFT || key == SDLK_A) {
-            m_paddle.dx = -1.0f;
+            m_paddle.dx = -k_paddle_speed;
         }
         else {
         }
@@ -105,13 +113,29 @@ Freakout::MovePaddle(float dt)
     m_paddle.x = x;
 }
 
+enum CollisionSource {up, down, right, left};
+static CollisionSource
+FindCollisionSource(Rectangle rect, Circle circle)
+{
+    float closest_x = std::max(rect.x0, std::min(circle.x, rect.x1));
+    float closest_y = std::max(rect.y0, std::min(circle.y, rect.y1));
+
+    float dx = circle.x - closest_x;
+    float dy = circle.y - closest_y;
+
+    if (std::abs(dx) > std::abs(dy)) {
+        return (dx > 0.0f) ? right : left;
+    }
+    else {
+        return (dy > 0.0f) ? down : up;
+    }
+}
+
 void
 Freakout::MoveBall(float dt)
 {
-    float x = m_ball.circle.x + m_ball.dx * dt;
-    float y = m_ball.circle.y + m_ball.dy * dt;
-    m_ball.circle.x = x;
-    m_ball.circle.y = y;
+    m_ball.circle.x = m_ball.circle.x + m_ball.dx * dt;
+    m_ball.circle.y = m_ball.circle.y + m_ball.dy * dt;
 
     // collision walls
     if (m_ball.circle.x <= 0.0f) {
@@ -128,8 +152,6 @@ Freakout::MoveBall(float dt)
     }
 
     // collision paddle
-    // Todo: Handle collisions on the side of the paddle near the bottom.
-    //       Those should end up in game over somehow.
     Rectangle paddle_rect = {
         m_paddle.x,
         0.0f,
@@ -137,34 +159,62 @@ Freakout::MoveBall(float dt)
         k_paddle_h
     };
     if (Intersect_AABB_Circle(paddle_rect, m_ball.circle)) {
-        // Todo: find a better name than 'percent' (which represents [0.0, 1.0] here instead of the expected [0, 100]).
-        float rect_half_width = (paddle_rect.x1 - paddle_rect.x0) / 2;
-        float rect_center_x = paddle_rect.x0 + rect_half_width;
-        float dist_x = m_ball.circle.x - rect_center_x;
-        float dist_x_percent = dist_x / rect_half_width;
+        CollisionSource collision_source = FindCollisionSource(paddle_rect, m_ball.circle);
+        if (collision_source == up) {
+            float paddle_half_w = k_paddle_w / 2.0f;
+            float paddle_cx = m_paddle.x + paddle_half_w;
+            float dist_cx = m_ball.circle.x - paddle_cx;
+            float dist_cx_prop = dist_cx / paddle_half_w;
 
-        float max_dx_percent = 0.7f;
-        float dx_percent = dist_x_percent * max_dx_percent;
-        float dy_percent = 1.0f - dx_percent;
+            float dx_prop = 0.6f * dist_cx_prop;
+            float dy_prop = 1.0f - std::abs(dx_prop);
+            float length = std::sqrt(dx_prop*dx_prop + dy_prop*dy_prop);
 
-        float length = std::sqrt(dx_percent*dx_percent + dy_percent*dy_percent);
-        float dx = k_ball_speed * (dx_percent / length);
-        float dy = k_ball_speed * (dy_percent / length);
+            float dx = k_ball_speed * (dx_prop / length);
+            float dy = k_ball_speed * (dy_prop / length);
 
-        m_ball.circle.y += paddle_rect.y1 -(m_ball.circle.y - m_ball.circle.r);
-        m_ball.dx = dx;
-        m_ball.dy = dy;
+            m_ball.circle.y += paddle_rect.y1 -(m_ball.circle.y - m_ball.circle.r);
+            m_ball.dx = dx;
+            m_ball.dy = dy;
+        }
+        else if (collision_source == right || collision_source == left){
+            m_ball.dx = -m_ball.dx;
+        }
+    }
+
+    // collision bricks
+    for (size_t y = 0; y < k_brick_rows; y++) {
+        for (size_t x = 0; x < k_brick_cols; x++) {
+            bool is_alive = m_brick_bitmap[y] & (1<<x);
+            bool is_collision = is_alive && Intersect_AABB_Circle(m_bricks[y][x], m_ball.circle);
+            if (is_collision) {
+                CollisionSource collision_source = FindCollisionSource(m_bricks[y][x], m_ball.circle);
+                if (collision_source == up || collision_source == down) {
+                    m_ball.dy = -m_ball.dy;
+                }
+                else {
+                    m_ball.dx = -m_ball.dx;
+                }
+
+                m_brick_bitmap[y] &= ~(1u<<x);
+                m_score += k_scores[y];
+                m_bricks_left -= 1;
+            }
+        }
+    }
+    if (m_bricks_left == 0) {
+        m_game_status = game_over;
     }
 }
 
 void
 Freakout::Draw()
 {
-    Color ball_color = {0.3f, 0.5f, 0.3f, 1.0f};
+    Color ball_color = {0.6f, 0.6f, 0.6f, 1.0f};
     g_renderer.PushCircle(m_ball.circle, ball_color, k_z_ball);
 
 
-    Color paddle_color = {0.6f, 0.3f, 0.3f, 1.0f};
+    Color paddle_color = {0.3f, 0.3f, 0.6f, 1.0f};
     Rectangle paddle_rect = {
         m_paddle.x,
         0.0f,
@@ -174,11 +224,32 @@ Freakout::Draw()
     g_renderer.PushRectangle(paddle_rect, paddle_color, k_z_paddle);
 
 
-    Color brick_color = {0.5f, 0.3f, 0.3f, 1.0f};
     for (uint32_t y = 0; y < k_brick_rows; y++) {
         for (uint32_t x = 0; x < k_brick_cols; x++) {
-            g_renderer.PushRectangle(m_bricks[y][x], brick_color, k_z_brick);
+            if (m_brick_bitmap[y] & (1 << x)) {
+                g_renderer.PushRectangle(m_bricks[y][x], k_brick_colors[y], k_z_brick);
+            }
         }
     }
 }
+
+void
+Freakout::DrawGameOverMenu()
+{
+    ImGui::Begin("FreakoutGameOverMenu", nullptr, k_imgui_window_flags_menu);
+    if (m_bricks_left == 0) {
+        ImGui::Text("You won!");
+    }
+    else {
+        ImGui::Text("You Lost.");
+    }
+    if (ImGui::Button("Play Again")) {
+        m_game_status = game_start;
+    }
+    if (ImGui::Button("Exit")) {
+        m_game_status = game_exit;
+    }
+    ImGui::End();
+}
+
 
