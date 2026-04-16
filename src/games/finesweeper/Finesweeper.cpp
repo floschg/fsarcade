@@ -19,6 +19,12 @@ static constexpr Color k_mine_count_colors[8] = {
 };
 
 
+std::unique_ptr<Game>
+Game::CreateFinesweeper()
+{
+    return std::make_unique<Finesweeper>();
+}
+
 Finesweeper::Finesweeper()
     : m_font{k_dejavu_sans_filepath, 22}
 {
@@ -290,7 +296,7 @@ Finesweeper::Draw()
                 m_grid_pos.x + (float)x * m_cell_outer_size.x,
                 m_grid_pos.y + (float)y * m_cell_outer_size.y,
             };
-            Rectangle cell_rect = {
+            AABB cell_aabb = {
                 cell_pos.x, cell_pos.y,
                 cell_pos.x + m_cell_inner_size.x, cell_pos.y + m_cell_inner_size.y
             };
@@ -300,7 +306,7 @@ Finesweeper::Draw()
             bool is_mine = IsMine(x, y);
 
             if (is_covered) {
-                g_renderer.PushRectangle(cell_rect, covered_cell_color, 0.0f);
+                g_renderer.PushAABB(cell_aabb, covered_cell_color, 0.0f);
 
 
                 if (is_flagged) {
@@ -308,13 +314,13 @@ Finesweeper::Draw()
                         cell_pos.x + flag_offset.x,
                         cell_pos.y + flag_offset.y,
                     };
-                    Rectangle flag_rect = {
+                    AABB flag_aabb = {
                         flag_pos.x,
                         flag_pos.y,
                         flag_pos.x + flag_size.x,
                         flag_pos.y + flag_size.y,
                     };
-                    g_renderer.PushRectangle(flag_rect, flag_color, z);
+                    g_renderer.PushAABB(flag_aabb, flag_color, z);
                 }
             }
             else {
@@ -323,16 +329,16 @@ Finesweeper::Draw()
                         cell_pos.x,
                         cell_pos.y,
                     };
-                    Rectangle mine_rect = {
+                    AABB mine_aabb = {
                         mine_pos.x,
                         mine_pos.y,
                         mine_pos.x + m_cell_inner_size.x,
                         mine_pos.y + m_cell_inner_size.y,
                     };
-                    g_renderer.PushRectangle(mine_rect, mine_color, z);
+                    g_renderer.PushAABB(mine_aabb, mine_color, z);
                 }
                 else {
-                    g_renderer.PushRectangle(cell_rect, uncovered_cell_color, 0.0f);
+                    g_renderer.PushAABB(cell_aabb, uncovered_cell_color, 0.0f);
 
                     V2F32 mine_count_pos = {
                         cell_pos.x,

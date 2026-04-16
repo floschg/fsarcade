@@ -1,5 +1,4 @@
 #include "games/fnake/Fnake.hpp"
-#include "common/shapes.hpp"
 #include "games/Game.hpp"
 #include "renderer/Renderer.hpp"
 #include "common/MemoryManager.hpp"
@@ -11,6 +10,12 @@
 #include <fstream>
 #include <iostream>
 
+
+std::unique_ptr<Game>
+Game::CreateFnake()
+{
+    return std::make_unique<Fnake>();
+}
 
 Fnake::Fnake()
     : m_font {k_dejavu_sans_mono_filepath, 22}
@@ -245,13 +250,13 @@ void
 Fnake::Draw()
 {
     Color tilemap_color = {0.0f, 0.0f, 0.0f, 1.0f};
-    Rectangle tilemap_rect = {
+    AABB tilemap_aabb = {
         k_tilemap_x,
         k_tilemap_y,
         k_tilemap_x + k_tile_size * k_tiles_x,
         k_tilemap_y + k_tile_size * k_tiles_y
     };
-    g_renderer.PushRectangle(tilemap_rect, tilemap_color, k_z_tilemap);
+    g_renderer.PushAABB(tilemap_aabb, tilemap_color, k_z_tilemap);
 
 
     DrawFood();
@@ -269,66 +274,66 @@ Fnake::DrawBody()
     auto curr = m_body_parts.begin();
     auto next = curr + 1;
 
-    Rectangle rect_curr;
-    Rectangle rect_next;
+    AABB aabb_curr;
+    AABB aabb_next;
 
 
     // draw head
     {
         float x0_next = TilemapXToWorldX(next->tile_pos.x) + bodypart_offset;
         float y0_next = TilemapYToWorldY(next->tile_pos.y) + bodypart_offset;
-        rect_next = {
+        aabb_next = {
             x0_next,
             y0_next,
             x0_next + bodypart_size,
             y0_next + bodypart_size
         };
-        rect_curr = rect_next;
+        aabb_curr = aabb_next;
 
         float progress_size = m_tile_progress * k_tile_size;
         if (curr->next_direction_to_tail == up) {
-            rect_curr.y0 -= progress_size;
-            rect_curr.y1 -= progress_size;
-            if (rect_curr.y1 <= rect_next.y0) {
-                DrawBodyConnectionUp(rect_curr, rect_next.y0);
+            aabb_curr.y0 -= progress_size;
+            aabb_curr.y1 -= progress_size;
+            if (aabb_curr.y1 <= aabb_next.y0) {
+                DrawBodyConnectionUp(aabb_curr, aabb_next.y0);
             }
         }
         else if (curr->next_direction_to_tail == down) {
-            rect_curr.y0 += progress_size;
-            rect_curr.y1 += progress_size;
-            if (rect_curr.y0 >= rect_next.y1) {
-                DrawBodyConnectionDown(rect_curr, rect_next.y1);
+            aabb_curr.y0 += progress_size;
+            aabb_curr.y1 += progress_size;
+            if (aabb_curr.y0 >= aabb_next.y1) {
+                DrawBodyConnectionDown(aabb_curr, aabb_next.y1);
             }
         }
         else if (curr->next_direction_to_tail == right) {
-            rect_curr.x0 -= progress_size;
-            rect_curr.x1 -= progress_size;
-            if (rect_curr.x1 <= rect_next.x0) {
-                DrawBodyConnectionRight(rect_curr, rect_next.x0);
+            aabb_curr.x0 -= progress_size;
+            aabb_curr.x1 -= progress_size;
+            if (aabb_curr.x1 <= aabb_next.x0) {
+                DrawBodyConnectionRight(aabb_curr, aabb_next.x0);
             }
         }
         else if (curr->next_direction_to_tail == left) {
-            rect_curr.x0 += progress_size;
-            rect_curr.x1 += progress_size;
-            if (rect_curr.x0 >= rect_next.x1) {
-                DrawBodyConnectionLeft(rect_curr, rect_next.x1);
+            aabb_curr.x0 += progress_size;
+            aabb_curr.x1 += progress_size;
+            if (aabb_curr.x0 >= aabb_next.x1) {
+                DrawBodyConnectionLeft(aabb_curr, aabb_next.x1);
             }
         }
-        g_renderer.PushRectangle(rect_curr, body_color, k_z_body);
+        g_renderer.PushAABB(aabb_curr, body_color, k_z_body);
     }
 
 
     // draw remaining body
     curr = next;
     next = next + 1;
-    rect_curr = rect_next;
+    aabb_curr = aabb_next;
     while (curr != m_body_parts.end()) {
-        g_renderer.PushRectangle(rect_curr, body_color, k_z_body);
+        g_renderer.PushAABB(aabb_curr, body_color, k_z_body);
 
 
         float x0_next = TilemapXToWorldX(next->tile_pos.x) + bodypart_offset;
         float y0_next = TilemapYToWorldY(next->tile_pos.y) + bodypart_offset;
-        rect_next = {
+        aabb_next = {
             x0_next,
             y0_next,
             x0_next + bodypart_size,
@@ -339,23 +344,23 @@ Fnake::DrawBody()
         if (next != m_body_parts.end()) { // don't draw connection to vanishing tail
             Direction next_direction_to_tail = curr->next_direction_to_tail;
             if (next_direction_to_tail == up) {
-                DrawBodyConnectionUp(rect_curr, rect_next.y0);
+                DrawBodyConnectionUp(aabb_curr, aabb_next.y0);
             }
             else if (next_direction_to_tail == down) {
-                DrawBodyConnectionDown(rect_curr, rect_next.y1);
+                DrawBodyConnectionDown(aabb_curr, aabb_next.y1);
             }
             else if (next_direction_to_tail == right) {
-                DrawBodyConnectionRight(rect_curr, rect_next.x0);
+                DrawBodyConnectionRight(aabb_curr, aabb_next.x0);
             }
             else if (next_direction_to_tail == left) {
-                DrawBodyConnectionLeft(rect_curr, rect_next.x1);
+                DrawBodyConnectionLeft(aabb_curr, aabb_next.x1);
             }
         }
 
 
         curr = next;
         next = next + 1;
-        rect_curr = rect_next;
+        aabb_curr = aabb_next;
     }
 
 
@@ -367,83 +372,83 @@ Fnake::DrawBody()
         float tail_x1 = tail_x0 + bodypart_size;
         float tail_y1 = tail_y0 + bodypart_size;
         float progress_size = (1.0f-m_tile_progress) * k_tile_size;
-        Rectangle vanishing_tail_rect;
+        AABB vanishing_tail_aabb;
         if (tail.next_direction_to_tail == up) {
-            vanishing_tail_rect.x0 = tail_x0;
-            vanishing_tail_rect.y0 = tail_y1;
-            vanishing_tail_rect.x1 = tail_x1;
-            vanishing_tail_rect.y1 = tail_y1 + progress_size;
+            vanishing_tail_aabb.x0 = tail_x0;
+            vanishing_tail_aabb.y0 = tail_y1;
+            vanishing_tail_aabb.x1 = tail_x1;
+            vanishing_tail_aabb.y1 = tail_y1 + progress_size;
         }
         else if (tail.next_direction_to_tail == down) {
-            vanishing_tail_rect.x0 = tail_x0;
-            vanishing_tail_rect.y0 = tail_y0 - progress_size;
-            vanishing_tail_rect.x1 = tail_x1;
-            vanishing_tail_rect.y1 = tail_y0;
+            vanishing_tail_aabb.x0 = tail_x0;
+            vanishing_tail_aabb.y0 = tail_y0 - progress_size;
+            vanishing_tail_aabb.x1 = tail_x1;
+            vanishing_tail_aabb.y1 = tail_y0;
         }
         else if (tail.next_direction_to_tail == right) {
-            vanishing_tail_rect.x0 = tail_x1;
-            vanishing_tail_rect.y0 = tail_y0;
-            vanishing_tail_rect.x1 = tail_x1 + progress_size;
-            vanishing_tail_rect.y1 = tail_y1;
+            vanishing_tail_aabb.x0 = tail_x1;
+            vanishing_tail_aabb.y0 = tail_y0;
+            vanishing_tail_aabb.x1 = tail_x1 + progress_size;
+            vanishing_tail_aabb.y1 = tail_y1;
         }
         else if (tail.next_direction_to_tail == left) {
-            vanishing_tail_rect.x0 = tail_x0 - progress_size;
-            vanishing_tail_rect.y0 = tail_y0;
-            vanishing_tail_rect.x1 = tail_x0;
-            vanishing_tail_rect.y1 = tail_y1;
+            vanishing_tail_aabb.x0 = tail_x0 - progress_size;
+            vanishing_tail_aabb.y0 = tail_y0;
+            vanishing_tail_aabb.x1 = tail_x0;
+            vanishing_tail_aabb.y1 = tail_y1;
         }
         if (tail.next_direction_to_tail != none) {
-            g_renderer.PushRectangle(vanishing_tail_rect, k_color_body, k_z_body);
+            g_renderer.PushAABB(vanishing_tail_aabb, k_color_body, k_z_body);
         }
     }
 }
 
 void
-Fnake::DrawBodyConnectionUp(Rectangle rect_origin, float top_y0)
+Fnake::DrawBodyConnectionUp(AABB aabb_origin, float top_y0)
 {
-    Rectangle rect = {
-        rect_origin.x0,
-        rect_origin.y1,
-        rect_origin.x1,
+    AABB aabb = {
+        aabb_origin.x0,
+        aabb_origin.y1,
+        aabb_origin.x1,
         top_y0
     };
-    g_renderer.PushRectangle(rect, k_color_body, k_z_body);
+    g_renderer.PushAABB(aabb, k_color_body, k_z_body);
 }
 
 void
-Fnake::DrawBodyConnectionDown(Rectangle rect_origin, float bot_y1)
+Fnake::DrawBodyConnectionDown(AABB aabb_origin, float bot_y1)
 {
-    Rectangle rect = {
-        rect_origin.x0,
+    AABB aabb = {
+        aabb_origin.x0,
         bot_y1,
-        rect_origin.x1,
-        rect_origin.y0
+        aabb_origin.x1,
+        aabb_origin.y0
     };
-    g_renderer.PushRectangle(rect, k_color_body, k_z_body);
+    g_renderer.PushAABB(aabb, k_color_body, k_z_body);
 }
 
 void
-Fnake::DrawBodyConnectionRight(Rectangle rect_origin, float right_x0)
+Fnake::DrawBodyConnectionRight(AABB aabb_origin, float right_x0)
 {
-    Rectangle rect = {
-        rect_origin.x1,
-        rect_origin.y0,
+    AABB aabb = {
+        aabb_origin.x1,
+        aabb_origin.y0,
         right_x0,
-        rect_origin.y1
+        aabb_origin.y1
     };
-    g_renderer.PushRectangle(rect, k_color_body, k_z_body);
+    g_renderer.PushAABB(aabb, k_color_body, k_z_body);
 }
 
 void
-Fnake::DrawBodyConnectionLeft(Rectangle rect_origin, float left_x1)
+Fnake::DrawBodyConnectionLeft(AABB aabb_origin, float left_x1)
 {
-    Rectangle rect = {
+    AABB aabb = {
         left_x1,
-        rect_origin.y0,
-        rect_origin.x0,
-        rect_origin.y1
+        aabb_origin.y0,
+        aabb_origin.x0,
+        aabb_origin.y1
     };
-    g_renderer.PushRectangle(rect, k_color_body, k_z_body);
+    g_renderer.PushAABB(aabb, k_color_body, k_z_body);
 }
 
 void
@@ -456,13 +461,13 @@ Fnake::DrawFood()
     float food_x = TilemapXToWorldX(m_food_tile_pos.x);
     float food_y = TilemapYToWorldY(m_food_tile_pos.y);
 
-    Rectangle rect = {
+    AABB aabb = {
         food_x + bodypart_offset,
         food_y + bodypart_offset,
-        rect.x0 + bodypart_size,
-        rect.y0 + bodypart_size
+        aabb.x0 + bodypart_size,
+        aabb.y0 + bodypart_size
     };
-    g_renderer.PushRectangle(rect, food_color, k_z_food);
+    g_renderer.PushAABB(aabb, food_color, k_z_food);
 }
 
 void

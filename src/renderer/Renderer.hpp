@@ -2,7 +2,6 @@
 
 #include "common/math.hpp"
 #include "common/Font.hpp"
-#include "common/shapes.hpp"
 #include "common/MemoryManager.hpp"
 
 #include <SDL3/SDL.h>
@@ -18,11 +17,11 @@ class Renderer;
 extern Renderer g_renderer;
 
 
-enum REntityType : int32_t {
-    REntityType_Rectangle,
-    REntityType_AlphaBitmap,
-    REntityType_Circle,
-    REntityType_Text,
+enum class REntityType : int32_t {
+    AABB,
+    AlphaBitmap,
+    Circle,
+    Text,
 };
 
 
@@ -33,10 +32,17 @@ struct REntity_AlphaBitmap {
     Color color;
 };
 
-struct REntity_Rectangle {
+struct REntity_AABB {
     REntityType type;
-    Rectangle rect;
+    AABB aabb;
     Color color;
+};
+
+struct RENtity_Rect {
+    REntityType type;
+    AABB aabb;
+    Color color;
+    float angle;
 };
 
 struct REntity_Circle {
@@ -57,7 +63,7 @@ struct REntity_String32 {
 union REntity {
     REntityType type;
     REntity_AlphaBitmap bitmap;
-    REntity_Rectangle rect;
+    REntity_AABB aabb;
     REntity_Circle circle;
     REntity_String32 string32;
 };
@@ -83,7 +89,7 @@ public:
     void SetCameraSize(float w, float h);
 
     void PushAlphaBitmap(AlphaBitmap& bitmap, V2F32 pos, Color color, uint32_t z);
-    void PushRectangle(Rectangle rect, Color color, uint32_t z);
+    void PushAABB(AABB aabb, Color color, uint32_t z);
     void PushCircle(Circle circle, Color color, uint32_t z);
     void PushString32(String32Id id, Font& font, V2F32 pos, Color color, uint32_t z);
 

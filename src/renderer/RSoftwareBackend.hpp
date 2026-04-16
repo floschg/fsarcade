@@ -29,7 +29,7 @@ private:
     void SortRenderEntities();
 
     void DrawClear();
-    void DrawRectangle(REntity_Rectangle& entity);
+    void DrawAABB(REntity_AABB& entity);
     void DrawCircle(REntity_Circle& circle);
     void DrawAlphaBitmap(REntity_AlphaBitmap& entity);
     void DrawFrameString32(REntity_String32& entity);

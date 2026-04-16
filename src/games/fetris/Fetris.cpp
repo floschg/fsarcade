@@ -13,6 +13,11 @@
 #include <string>
 
 
+std::unique_ptr<Game>
+Game::CreateFetris()
+{
+    return std::make_unique<Fetris>();
+}
 
 Fetris::Fetris()
     : m_font{k_dejavu_sans_mono_filepath, 22}

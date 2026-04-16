@@ -1,7 +1,6 @@
 #pragma once
 
 #include "games/Game.hpp"
-#include "common/shapes.hpp"
 
 
 class Freakout : public Game {
@@ -66,7 +65,7 @@ private:
 
 private:
     uint32_t m_brick_bitmap[k_brick_cols];
-    Rectangle m_bricks[k_brick_rows][k_brick_cols];
+    AABB m_bricks[k_brick_rows][k_brick_cols];
     Paddle m_paddle;
     Ball m_ball;
 

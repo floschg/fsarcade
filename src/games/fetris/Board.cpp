@@ -108,14 +108,14 @@ Board::Draw(int32_t level)
         fetromino_size_with_border * 10,
         fetromino_size_with_border * 20
     };
-    Rectangle bg_world_rect = {
+    AABB bg_world_aabb = {
         bg_world_pos.x,
         bg_world_pos.y,
         bg_world_pos.x + bg_world_dim.x,
         bg_world_pos.y + bg_world_dim.y,
     };
     Color bg_color = {0.0f, 0.0f, 0.0f, 1.0f};
-    g_renderer.PushRectangle(bg_world_rect, bg_color, Fetris::k_z_bg);
+    g_renderer.PushAABB(bg_world_aabb, bg_color, Fetris::k_z_bg);
 
 
     // fetromino parts
@@ -136,7 +136,7 @@ Board::Draw(int32_t level)
                     1.0f
                 };
                 V2F32 world_dim = local_dim;
-                Rectangle world_rect = {
+                AABB world_aabb = {
                     world_pos.x,
                     world_pos.y,
                     world_pos.x + world_dim.x,
@@ -145,7 +145,7 @@ Board::Draw(int32_t level)
 
 
                 Color color = Fetromino::GetColor(fetromino_id);
-                g_renderer.PushRectangle(world_rect, color, Fetris::k_z_fetromino);
+                g_renderer.PushAABB(world_aabb, color, Fetris::k_z_fetromino);
             }
         }
     }

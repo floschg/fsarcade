@@ -224,7 +224,7 @@ Fetromino::Draw(Id id, int32_t ori, V2F32 pos, float scale)
                     pos.y + local_pos.y,
                 };
                 V2F32 world_dim = local_dim;
-                Rectangle world_rect = {
+                AABB world_aabb = {
                     world_pos.x,
                     world_pos.y,
                     world_pos.x + world_dim.x,
@@ -233,7 +233,7 @@ Fetromino::Draw(Id id, int32_t ori, V2F32 pos, float scale)
 
 
                 Color color = GetColor(id);
-                g_renderer.PushRectangle(world_rect, color, Fetris::k_z_fetromino);
+                g_renderer.PushAABB(world_aabb, color, Fetris::k_z_fetromino);
             }
         }
     }

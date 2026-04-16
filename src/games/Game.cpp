@@ -1,8 +1,4 @@
 #include "games/Game.hpp"
-#include "games/fetris/Fetris.hpp"
-#include "games/fnake/Fnake.hpp"
-#include "games/finesweeper/Finesweeper.hpp"
-#include "games/freakout/Freakout.hpp"
 #include "common/defs.hpp"
 #include "renderer/Renderer.hpp"
 
@@ -19,19 +15,23 @@ Game::Select(GameType type)
     } break;
 
     case finesweeper: {
-        return std::make_unique<Finesweeper>();
+        return CreateFinesweeper();
     } break;
 
     case fnake: {
-        return std::make_unique<Fnake>();
+        return CreateFnake();
     } break;
 
     case fetris: {
-        return std::make_unique<Fetris>();
+        return CreateFetris();
     } break;
 
     case freakout: {
-        return std::make_unique<Freakout>();
+        return CreateFreakout();
+    } break;
+
+    case fasteroids: {
+        return CreateFasteroids();
     } break;
 
     InvalidDefaultCase;
@@ -99,8 +99,7 @@ Game::Update(std::vector<SDL_Event>& events)
 void
 Game::DrawGameStartMenu()
 {
-    // there is no menu, we just start the game.
-    Start();
+    Start(); // there is no menu, we just start the game.
 }
 
 void

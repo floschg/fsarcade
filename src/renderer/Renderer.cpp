@@ -80,21 +80,21 @@ void
 Renderer::PushAlphaBitmap(AlphaBitmap& bitmap, V2F32 pos, Color color, uint32_t z)
 {
     m_render_entities.emplace_back(REntity{.bitmap{
-            REntityType_AlphaBitmap,
-            bitmap,
-            pos,
-            color
+        REntityType::AlphaBitmap,
+        bitmap,
+        pos,
+        color
     }});
     m_sort_entries.emplace_back(z, m_render_entities.size()-1);
 }
 
 void
-Renderer::PushRectangle(Rectangle rect, Color color, uint32_t z)
+Renderer::PushAABB(AABB aabb, Color color, uint32_t z)
 {
-    m_render_entities.emplace_back(REntity{.rect{
-            REntityType_Rectangle,
-            rect,
-            color
+    m_render_entities.emplace_back(REntity{.aabb{
+        REntityType::AABB,
+        aabb,
+        color
     }});
     m_sort_entries.emplace_back(z, m_render_entities.size()-1);
 }
@@ -103,9 +103,9 @@ void
 Renderer::PushCircle(Circle circle, Color color, uint32_t z)
 {
     m_render_entities.emplace_back(REntity{.circle{
-            REntityType_Circle,
-            circle,
-            color
+        REntityType::Circle,
+        circle,
+        color
     }});
     m_sort_entries.emplace_back(z, m_render_entities.size()-1);
 }
@@ -114,11 +114,11 @@ void
 Renderer::PushString32(String32Id id, Font& font, V2F32 pos, Color color, uint32_t z)
 {
     m_render_entities.emplace_back(REntity{.string32{
-            REntityType_Text,
-            id,
-            font,
-            pos,
-            color
+        REntityType::Text,
+        id,
+        font,
+        pos,
+        color
     }});
     m_sort_entries.emplace_back(z, m_render_entities.size()-1);
 }

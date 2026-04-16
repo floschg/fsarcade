@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <common/shapes.hpp>
 #include <algorithm>
 #include <cassert>
 
@@ -59,15 +58,28 @@ struct Color {
     float a;
 };
 
+struct AABB {
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+};
+
+struct Circle {
+    float x;
+    float y;
+    float r;
+};
+
 
 inline bool
-Intersect_AABB_Circle(Rectangle rect, Circle circle)
+Intersect_AABB_Circle(AABB aabb, Circle circle)
 {
-    assert(rect.x0 <= rect.x1);
-    assert(rect.y0 <= rect.y1);
+    assert(aabb.x0 <= aabb.x1);
+    assert(aabb.y0 <= aabb.y1);
 
-    float closest_x = std::max(rect.x0, std::min(circle.x, rect.x1));
-    float closest_y = std::max(rect.y0, std::min(circle.y, rect.y1));
+    float closest_x = std::max(aabb.x0, std::min(circle.x, aabb.x1));
+    float closest_y = std::max(aabb.y0, std::min(circle.y, aabb.y1));
 
     float dx = closest_x - circle.x;
     float dy = closest_y - circle.y; 

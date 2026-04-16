@@ -1,11 +1,16 @@
 #include "games/freakout/Freakout.hpp"
 #include "common/math.hpp"
 #include "games/Game.hpp"
-#include "common/shapes.hpp"
 #include "renderer/Renderer.hpp"
 
 #include <cmath>
+#include <memory>
 
+std::unique_ptr<Game>
+Game::CreateFreakout()
+{
+    return std::make_unique<Freakout>();
+}
 
 void
 Freakout::Start()
@@ -125,10 +130,10 @@ Freakout::MovePaddle(float dt)
 
 enum CollisionSource {up, down, right, left};
 static CollisionSource
-FindCollisionSource(Rectangle rect, Circle circle)
+FindCollisionSource(AABB aabb, Circle circle)
 {
-    float closest_x = std::max(rect.x0, std::min(circle.x, rect.x1));
-    float closest_y = std::max(rect.y0, std::min(circle.y, rect.y1));
+    float closest_x = std::max(aabb.x0, std::min(circle.x, aabb.x1));
+    float closest_y = std::max(aabb.y0, std::min(circle.y, aabb.y1));
 
     float dx = circle.x - closest_x;
     float dy = circle.y - closest_y;
@@ -165,14 +170,14 @@ Freakout::MoveBall(float dt)
     }
 
     // collision paddle
-    Rectangle paddle_rect = {
+    AABB paddle_aabb = {
         m_paddle.x,
         0.0f,
         m_paddle.x + k_paddle_w,
         k_paddle_h
     };
-    if (Intersect_AABB_Circle(paddle_rect, m_ball.circle)) {
-        CollisionSource collision_source = FindCollisionSource(paddle_rect, m_ball.circle);
+    if (Intersect_AABB_Circle(paddle_aabb, m_ball.circle)) {
+        CollisionSource collision_source = FindCollisionSource(paddle_aabb, m_ball.circle);
         if (collision_source == up) {
             float paddle_half_w = k_paddle_w / 2.0f;
             float paddle_cx = m_paddle.x + paddle_half_w;
@@ -184,16 +189,16 @@ Freakout::MoveBall(float dt)
 
             V2F32 velocity = Velocity(dx_prop, dy_prop);
 
-            m_ball.circle.y = paddle_rect.y1 + m_ball.circle.r;
+            m_ball.circle.y = paddle_aabb.y1 + m_ball.circle.r;
             m_ball.dx = velocity.x;
             m_ball.dy = velocity.y;
         }
         else if (collision_source == right) {
-            m_ball.circle.x = paddle_rect.x1 + m_ball.circle.r;
+            m_ball.circle.x = paddle_aabb.x1 + m_ball.circle.r;
             m_ball.dx = -m_ball.dx;
         }
         else if (collision_source == left) {
-            m_ball.circle.x = paddle_rect.x0 - m_ball.circle.r;
+            m_ball.circle.x = paddle_aabb.x0 - m_ball.circle.r;
             m_ball.dx = -m_ball.dx;
         }
     }
@@ -204,7 +209,7 @@ Freakout::MoveBall(float dt)
             bool is_alive = m_brick_bitmap[y] & (1<<x);
             bool is_collision = is_alive && Intersect_AABB_Circle(m_bricks[y][x], m_ball.circle);
             if (is_collision) {
-                Rectangle brick = m_bricks[y][x];
+                AABB brick = m_bricks[y][x];
                 CollisionSource collision_source = FindCollisionSource(brick, m_ball.circle);
                 if (collision_source == up) {
                     m_ball.circle.y = brick.y1 + m_ball.circle.r;
@@ -256,19 +261,19 @@ Freakout::Draw()
 
 
     Color paddle_color = {0.3f, 0.3f, 0.6f, 1.0f};
-    Rectangle paddle_rect = {
+    AABB paddle_aabb = {
         m_paddle.x,
         0.0f,
         m_paddle.x + k_paddle_w,
         k_paddle_h
     };
-    g_renderer.PushRectangle(paddle_rect, paddle_color, k_z_paddle);
+    g_renderer.PushAABB(paddle_aabb, paddle_color, k_z_paddle);
 
 
     for (uint32_t y = 0; y < k_brick_rows; y++) {
         for (uint32_t x = 0; x < k_brick_cols; x++) {
             if (m_brick_bitmap[y] & (1 << x)) {
-                g_renderer.PushRectangle(m_bricks[y][x], k_brick_colors[y], k_z_brick);
+                g_renderer.PushAABB(m_bricks[y][x], k_brick_colors[y], k_z_brick);
             }
         }
     }

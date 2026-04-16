@@ -13,10 +13,11 @@ class Game {
 public:
     enum GameType {
         no_game,
-        finesweeper,
-        fnake,
         fetris,
-        freakout
+        fnake,
+        finesweeper,
+        freakout,
+        fasteroids
     };
 
     enum GameStatus {
@@ -67,5 +68,11 @@ private:
     void DrawGamePauseMenu();
     void ProcessEventDuringPause(SDL_Event& event);
     float ProcessDt();
+
+    static std::unique_ptr<Game> CreateFinesweeper();
+    static std::unique_ptr<Game> CreateFnake();
+    static std::unique_ptr<Game> CreateFetris();
+    static std::unique_ptr<Game> CreateFreakout();
+    static std::unique_ptr<Game> CreateFasteroids();
 };
 

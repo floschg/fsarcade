@@ -47,6 +47,7 @@ target_sources(fsarcade PUBLIC
     ${FSARCADE_SRC_DIR}/games/fnake/Fnake.cpp
     ${FSARCADE_SRC_DIR}/games/finesweeper/Finesweeper.cpp
     ${FSARCADE_SRC_DIR}/games/freakout/Freakout.cpp
+    ${FSARCADE_SRC_DIR}/games/fasteroids/Fasteroids.cpp
 )
 target_include_directories(fsarcade PRIVATE
     ${FSARCADE_SRC_DIR}

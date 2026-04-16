@@ -46,19 +46,19 @@ RSoftwareBackend::Draw()
     for (auto& sort_entry : m_renderer.m_sort_entries) {
         REntity& entity = m_renderer.m_render_entities[sort_entry.entity_index];
         switch (entity.type) {
-        case REntityType_Rectangle: {
-            DrawRectangle(entity.rect);
+        case REntityType::AABB: {
+            DrawAABB(entity.aabb);
         } break;
 
-        case REntityType_AlphaBitmap: {
+        case REntityType::AlphaBitmap: {
             DrawAlphaBitmap(entity.bitmap);
         } break;
 
-        case REntityType_Text: {
+        case REntityType::Text: {
             DrawFrameString32(entity.string32);
         }; break;
 
-        case REntityType_Circle: {
+        case REntityType::Circle: {
             DrawCircle(entity.circle);
         }; break;
 
@@ -146,12 +146,12 @@ RSoftwareBackend::DrawClear()
 }
 
 void
-RSoftwareBackend::DrawRectangle(REntity_Rectangle& entity)
+RSoftwareBackend::DrawAABB(REntity_AABB& entity)
 {
-    int32_t xmin = m_renderer.WorldXToScreenX(entity.rect.x0);
-    int32_t ymin = m_renderer.WorldYToScreenY(entity.rect.y0);
-    int32_t xmax = m_renderer.WorldXToScreenX(entity.rect.x1);
-    int32_t ymax = m_renderer.WorldYToScreenY(entity.rect.y1);
+    int32_t xmin = m_renderer.WorldXToScreenX(entity.aabb.x0);
+    int32_t ymin = m_renderer.WorldYToScreenY(entity.aabb.y0);
+    int32_t xmax = m_renderer.WorldXToScreenX(entity.aabb.x1);
+    int32_t ymax = m_renderer.WorldYToScreenY(entity.aabb.y1);
 
     if (xmin < 0) {
         xmin = 0;
@@ -182,7 +182,6 @@ RSoftwareBackend::DrawRectangle(REntity_Rectangle& entity)
 void
 RSoftwareBackend::DrawCircle(REntity_Circle& entity)
 {
-    // center + radius
     int32_t cx = m_renderer.WorldXToScreenX(entity.circle.x);
     int32_t cy = m_renderer.WorldYToScreenY(entity.circle.y);
     int32_t r = m_renderer.WorldXToScreenX(entity.circle.x + entity.circle.r) - m_renderer.WorldXToScreenX(entity.circle.x);

@@ -40,6 +40,9 @@ DrawGameMenu()
     if (ImGui::Button("Freakout")) {
         type = Game::freakout;
     }
+    if (ImGui::Button("Fasteroids")) {
+        type = Game::fasteroids;
+    }
     ImGui::End();
 
     return type;

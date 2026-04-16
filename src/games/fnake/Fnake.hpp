@@ -39,10 +39,10 @@ private:
     void HandleGameOver();
 
     void DrawBody();
-    void DrawBodyConnectionUp(Rectangle rect_origin, float top_y0);
-    void DrawBodyConnectionDown(Rectangle rect_origin, float bot_y1);
-    void DrawBodyConnectionRight(Rectangle rect_origin, float right_x0);
-    void DrawBodyConnectionLeft(Rectangle rect_origin, float left_x1);
+    void DrawBodyConnectionUp(AABB aabb_origin, float top_y0);
+    void DrawBodyConnectionDown(AABB aabb_origin, float bot_y1);
+    void DrawBodyConnectionRight(AABB aabb_origin, float right_x0);
+    void DrawBodyConnectionLeft(AABB aabb_origin, float left_x1);
     void DrawFood();
     void DrawScores();
 
