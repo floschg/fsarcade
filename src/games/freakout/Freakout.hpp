@@ -60,6 +60,7 @@ private:
 
 
 private:
+    V2F32 Velocity(float dx_prop, float dy_prop);
     void MovePaddle(float dt);
     void MoveBall(float dt);
 

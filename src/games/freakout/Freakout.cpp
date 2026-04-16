@@ -10,16 +10,17 @@
 void
 Freakout::Start()
 {
-    float xmid = (3.0f / 2);
-    m_paddle.x = xmid - (k_paddle_w / 2);
+    float map_cx = (k_map_w / 2);
+    m_paddle.x = map_cx - (k_paddle_w / 2);
     m_paddle.dx = 0.0f;
 
 
     m_ball.circle.r = 0.05f;
-    m_ball.circle.x = xmid;
+    m_ball.circle.x = map_cx;
     m_ball.circle.y = k_paddle_h + m_ball.circle.r;
-    m_ball.dx = 0.0f;
-    m_ball.dy = k_ball_speed;
+    V2F32 ball_velocity = Velocity(0.3f, 0.7f);
+    m_ball.dx = ball_velocity.x;
+    m_ball.dy = ball_velocity.y;
 
 
     float brickmap_w = 1.00f * k_map_w;
@@ -48,6 +49,7 @@ Freakout::Start()
         brick_y0 += brick_h + brick_ygap;
     }
 
+
     static_assert(k_brick_cols <= sizeof(m_brick_bitmap[0])*8);
     uint32_t brick_bitmap_row_init = 0;
     for (size_t x = 0; x < k_brick_cols; x++) {
@@ -56,6 +58,7 @@ Freakout::Start()
     for (size_t y = 0; y < k_brick_rows; y++) {
         m_brick_bitmap[y] = brick_bitmap_row_init;
     }
+
 
     m_bricks_left = k_brick_rows * k_brick_cols;
     m_score = 0;
@@ -134,7 +137,7 @@ FindCollisionSource(Rectangle rect, Circle circle)
         return (dx > 0.0f) ? right : left;
     }
     else {
-        return (dy > 0.0f) ? down : up;
+        return (dy > 0.0f) ? up : down;
     }
 }
 
@@ -145,16 +148,19 @@ Freakout::MoveBall(float dt)
     m_ball.circle.y = m_ball.circle.y + m_ball.dy * dt;
 
     // collision walls
-    if (m_ball.circle.x <= 0.0f) {
+    if (m_ball.circle.x - m_ball.circle.r <= 0.0f) {
+        m_ball.circle.x = m_ball.circle.r;
         m_ball.dx = std::abs(m_ball.dx);
     }
     if (m_ball.circle.x + m_ball.circle.r >= k_map_w) {
+        m_ball.circle.x = k_map_w - m_ball.circle.r;
         m_ball.dx = -std::abs(m_ball.dx);
     }
     if (m_ball.circle.y <= 0.0f) {
         m_game_status = game_over;
     }
     if (m_ball.circle.y + m_ball.circle.r >= k_map_h) {
+        m_ball.circle.y = k_map_h - m_ball.circle.r;
         m_ball.dy = -std::abs(m_ball.dy);
     }
 
@@ -175,18 +181,19 @@ Freakout::MoveBall(float dt)
 
             float dx_prop = 0.6f * dist_cx_prop;
             float dy_prop = 1.0f - std::abs(dx_prop);
-            float length = std::sqrt(dx_prop*dx_prop + dy_prop*dy_prop);
 
-            float dx_normalized = dx_prop / length;
-            float dy_normalized = dy_prop / length;
-            float dx = k_ball_speed * dx_normalized;
-            float dy = k_ball_speed * dy_normalized;
+            V2F32 velocity = Velocity(dx_prop, dy_prop);
 
-            m_ball.circle.y += paddle_rect.y1 -(m_ball.circle.y - m_ball.circle.r);
-            m_ball.dx = dx;
-            m_ball.dy = dy;
+            m_ball.circle.y = paddle_rect.y1 + m_ball.circle.r;
+            m_ball.dx = velocity.x;
+            m_ball.dy = velocity.y;
         }
-        else if (collision_source == right || collision_source == left){
+        else if (collision_source == right) {
+            m_ball.circle.x = paddle_rect.x1 + m_ball.circle.r;
+            m_ball.dx = -m_ball.dx;
+        }
+        else if (collision_source == left) {
+            m_ball.circle.x = paddle_rect.x0 - m_ball.circle.r;
             m_ball.dx = -m_ball.dx;
         }
     }
@@ -197,11 +204,22 @@ Freakout::MoveBall(float dt)
             bool is_alive = m_brick_bitmap[y] & (1<<x);
             bool is_collision = is_alive && Intersect_AABB_Circle(m_bricks[y][x], m_ball.circle);
             if (is_collision) {
-                CollisionSource collision_source = FindCollisionSource(m_bricks[y][x], m_ball.circle);
-                if (collision_source == up || collision_source == down) {
+                Rectangle brick = m_bricks[y][x];
+                CollisionSource collision_source = FindCollisionSource(brick, m_ball.circle);
+                if (collision_source == up) {
+                    m_ball.circle.y = brick.y1 + m_ball.circle.r;
                     m_ball.dy = -m_ball.dy;
                 }
+                else if (collision_source == down) {
+                    m_ball.circle.y = brick.y0 - m_ball.circle.r;
+                    m_ball.dy = -m_ball.dy;
+                }
+                else if (collision_source == right) {
+                    m_ball.circle.x = brick.x1 + m_ball.circle.r;
+                    m_ball.dx = -m_ball.dx;
+                }
                 else {
+                    m_ball.circle.x = brick.x0 - m_ball.circle.r;
                     m_ball.dx = -m_ball.dx;
                 }
 
@@ -214,6 +232,20 @@ Freakout::MoveBall(float dt)
     if (m_bricks_left == 0) {
         m_game_status = game_over;
     }
+}
+
+V2F32
+Freakout::Velocity(float dx_prop, float dy_prop)
+{
+    float length = std::sqrt(dx_prop*dx_prop + dy_prop*dy_prop);
+    float dx_normalized = dx_prop / length;
+    float dy_normalized = dy_prop / length;
+
+    V2F32 velocity = {
+        k_ball_speed * dx_normalized,
+        k_ball_speed * dy_normalized
+    };
+    return velocity;
 }
 
 void
