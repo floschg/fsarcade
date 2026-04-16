@@ -35,23 +35,26 @@ Freakout::Start()
     float brick_xgap = brick_xgap_sum / (k_brick_cols+1);
     float brick_ygap = brick_ygap_sum / (k_brick_rows+1);
 
-    float y = k_map_h - brickmap_h;
+    float brick_y0 = k_map_h - brickmap_h;
     for (uint32_t row = 0; row < k_brick_rows; row++) {
-        float x = brick_xgap;
+        float brick_x0 = brick_xgap;
         for (uint32_t col = 0; col < k_brick_cols; col++) {
-            m_bricks[row][col].x0 = x;
-            m_bricks[row][col].y0 = y;
-            m_bricks[row][col].x1 = x + brick_w;
-            m_bricks[row][col].y1 = y + brick_h;
-            x += brick_w + brick_xgap;
+            m_bricks[row][col].x0 = brick_x0;
+            m_bricks[row][col].y0 = brick_y0;
+            m_bricks[row][col].x1 = brick_x0 + brick_w;
+            m_bricks[row][col].y1 = brick_y0 + brick_h;
+            brick_x0 += brick_w + brick_xgap;
         }
-        y += brick_h + brick_ygap;
+        brick_y0 += brick_h + brick_ygap;
     }
 
-    uint32_t brick_bitmap_initializer = 0x3fff; // 14 bits that are 1
-    static_assert(k_brick_cols <= sizeof(m_brick_bitmap[0])*8); // e.g. 8*4bytes = 32bit
-    for (size_t i = 0; i < k_brick_cols; i++) {
-        m_brick_bitmap[i] = brick_bitmap_initializer;
+    static_assert(k_brick_cols <= sizeof(m_brick_bitmap[0])*8);
+    uint32_t brick_bitmap_row_init = 0;
+    for (size_t x = 0; x < k_brick_cols; x++) {
+        brick_bitmap_row_init |= 1<<x;
+    }
+    for (size_t y = 0; y < k_brick_rows; y++) {
+        m_brick_bitmap[y] = brick_bitmap_row_init;
     }
 
     m_bricks_left = k_brick_rows * k_brick_cols;
@@ -82,10 +85,14 @@ Freakout::ProcessEvent(SDL_Event& event)
     case SDL_EVENT_KEY_UP: {
         auto key = event.key.key;
         if (key == SDLK_RIGHT || key == SDLK_D) {
-            m_paddle.dx = 0.0f;
+            if (m_paddle.dx >= 0.0f) {
+                m_paddle.dx = 0.0f;
+            }
         }
         else if (key == SDLK_LEFT || key == SDLK_A) {
-            m_paddle.dx = 0.0f;
+            if (m_paddle.dx <= 0.0f) {
+                m_paddle.dx = 0.0f;
+            }
         }
     } break;
 
@@ -170,8 +177,10 @@ Freakout::MoveBall(float dt)
             float dy_prop = 1.0f - std::abs(dx_prop);
             float length = std::sqrt(dx_prop*dx_prop + dy_prop*dy_prop);
 
-            float dx = k_ball_speed * (dx_prop / length);
-            float dy = k_ball_speed * (dy_prop / length);
+            float dx_normalized = dx_prop / length;
+            float dy_normalized = dy_prop / length;
+            float dx = k_ball_speed * dx_normalized;
+            float dy = k_ball_speed * dy_normalized;
 
             m_ball.circle.y += paddle_rect.y1 -(m_ball.circle.y - m_ball.circle.r);
             m_ball.dx = dx;

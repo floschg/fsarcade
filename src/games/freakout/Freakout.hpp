@@ -31,7 +31,7 @@ class Freakout : public Game {
 
     static constexpr float k_paddle_w = 0.5f;
     static constexpr float k_paddle_h = 0.1f;
-    static constexpr float k_paddle_speed = 2.0f;
+    static constexpr float k_paddle_speed = 1.8f;
 
     static constexpr uint32_t k_scores[] = {1,1,3,3,5,5,7,7};
     static constexpr Color k_brick_colors[] = {
