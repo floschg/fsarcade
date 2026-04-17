@@ -7,18 +7,6 @@
 
 class RSoftwareBackend {
 public:
-    struct Canvas {
-        uint32_t rshift;
-        uint32_t gshift;
-        uint32_t bshift;
-        uint32_t ashift;
-        int32_t w;
-        int32_t h;
-        uint32_t* pixels;
-    };
-
-
-public:
     RSoftwareBackend(Renderer& renderer);
 
     void Draw();
@@ -37,10 +25,10 @@ private:
 
     void DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, Color color);
 
+
 private:
     Renderer& m_renderer;
-
-    uint32_t m_gltexture_id{};
-    Canvas m_canvas;
+    SDL_Texture* m_texture = 0;
+    SDL_Surface* m_surface = 0;
 };
 

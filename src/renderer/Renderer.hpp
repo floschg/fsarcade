@@ -76,7 +76,7 @@ struct RSortEntry {
 
 class Renderer {
 public:
-    void Init(SDL_Window* window);
+    void Init(SDL_Window* window, SDL_Renderer* sdl_renderer);
 
 
     /* core functions */
@@ -107,6 +107,7 @@ public:
 
 public:
     SDL_Window* m_window;
+    SDL_Renderer* m_sdl_renderer;
 
     int32_t m_screen_w;
     int32_t m_screen_h;

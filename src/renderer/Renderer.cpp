@@ -10,11 +10,20 @@ Renderer g_renderer;
 
 
 void
-Renderer::Init(SDL_Window* window)
+Renderer::Init(SDL_Window* window, SDL_Renderer* sdl_renderer)
 {
+    int w,h;
+    SDL_GetWindowSize(window, &w, &h);
+
     m_window = window;
+    m_sdl_renderer = sdl_renderer;
+
+    m_screen_w = w;
+    m_screen_h = h;
+
     m_render_entities.reserve(1024);
     m_sort_entries.reserve(1024);
+
     m_backend = std::make_unique<RSoftwareBackend>(*this);
 }
 
@@ -23,13 +32,18 @@ Renderer::Reset()
 {
     m_render_entities.clear();
     m_sort_entries.clear();
-    SetCameraSize(0.0f, 0.0f);
 }
 
 void
 Renderer::Draw()
 {
     m_backend->Draw();
+}
+
+void
+Renderer::SetClearColor(Color color)
+{
+    m_clear_color = color;
 }
 
 void
@@ -60,7 +74,6 @@ Renderer::WorldYToScreenY(float world_y)
     return (int32_t)screen_y;
 }
 
-
 V2F32
 Renderer::ScreenPosToViewPos(V2F32 screen_pos)
 {
@@ -68,12 +81,6 @@ Renderer::ScreenPosToViewPos(V2F32 screen_pos)
     view_pos.x = (screen_pos.x / (float)m_screen_w) * m_camera_w;
     view_pos.y = (screen_pos.y / (float)m_screen_h) * m_camera_h;
     return view_pos;
-}
-
-void
-Renderer::SetClearColor(Color color)
-{
-    m_clear_color = color;
 }
 
 void

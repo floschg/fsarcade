@@ -2,9 +2,12 @@
 #include "renderer/Renderer.hpp"
 #include "renderer/RSoftwareBackend.hpp"
 
-#include <glad/gl.h>
-#include <SDL3/SDL_video.h>
+#include <SDL3/SDL.h>
 
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_pixels.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
@@ -14,25 +17,19 @@
 RSoftwareBackend::RSoftwareBackend(Renderer& renderer)
     : m_renderer {renderer}
 {
-    m_canvas.rshift = 0;
-    m_canvas.gshift = 8;
-    m_canvas.bshift = 16;
-    m_canvas.ashift = 24;
-    m_canvas.w = 0;
-    m_canvas.h = 0;
-    m_canvas.pixels = nullptr;
+    assert(renderer.m_screen_w != 0);
+    assert(renderer.m_screen_h != 0);
+    Resize(renderer.m_screen_w, renderer.m_screen_h);
 
-
-    glEnable(GL_TEXTURE_2D);
-    glActiveTexture(GL_TEXTURE0);
-
-    glGenTextures(1, &m_gltexture_id);
-    glBindTexture(GL_TEXTURE_2D, m_gltexture_id);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    m_texture = SDL_CreateTexture(m_renderer.m_sdl_renderer,
+                                  m_surface->format,
+                                  SDL_TEXTUREACCESS_STREAMING,
+                                  m_surface->w,
+                                  m_surface->h);
+    if (!m_texture) {
+        printf("SDL_CreateTexture failed\n");
+        exit(0);
+    }
 }
 
 void
@@ -66,47 +63,41 @@ RSoftwareBackend::Draw()
         }
     }
 
-
-    glBindTexture(GL_TEXTURE_2D, m_gltexture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_canvas.w, m_canvas.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_canvas.pixels);
-
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
-    glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
-    glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
-    glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
-    glEnd();
+    if (!SDL_UpdateTexture(m_texture, 0, m_surface->pixels, m_surface->pitch)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_UpdateTexture failed: %s\n", SDL_GetError());
+    }
+    if (!SDL_RenderTextureRotated(m_renderer.m_sdl_renderer, m_texture, 0, 0, 0.0f, 0, SDL_FLIP_VERTICAL)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_RenderTexture failed: %s\n", SDL_GetError());
+    }
 }
 
 void
 RSoftwareBackend::Resize(int32_t w, int32_t h)
 {
-    if ((m_canvas.w == w && m_canvas.h == h)) {
-        return;
+    if (m_surface) {
+        void* pixels = m_surface->pixels;
+
+        SDL_DestroySurface(m_surface);
+        m_surface = 0;
+
+        _mm_free(pixels);
     }
 
-    size_t alignment = 32;
-    size_t new_size = static_cast<size_t>(w) * static_cast<size_t>(h) * sizeof(m_canvas.pixels[0]);
-    if (new_size == 0) {
-        _mm_free(m_canvas.pixels);
-        m_canvas.pixels = nullptr;
-        m_canvas.w = 0;
-        m_canvas.h = 0;
-        return;
+    int bytes_per_pixel = 4;
+    int pitch_unaligned = w * bytes_per_pixel;
+    int pitch = (pitch_unaligned + 31) & ~31;
+    int size = h * pitch;
+
+    void* pixels = _mm_malloc(size_t(size), 32);
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_ARGB8888, pixels, pitch);
+    if (!surface) {
+        printf("SDL_CreateSurface failed on Resize\n");
+        exit(0);
     }
+    m_surface = surface;
 
-    uint32_t* new_pixels = (uint32_t*)_mm_malloc(new_size, alignment);
-    if (!new_pixels) {
-        printf("_mm_malloc failed for resizing canvas\n");
-        return;
-    }
-
-    _mm_free(m_canvas.pixels);
-    m_canvas.w = w;
-    m_canvas.h = h;
-    m_canvas.pixels = new_pixels;
-
-    glViewport(0, 0, w, h);
+    assert(((uint64_t)pixels & 0b11111) == 0);
+    assert(m_surface->pitch % 32 == 0);
 }
 
 void
@@ -123,25 +114,30 @@ void
 RSoftwareBackend::DrawClear()
 {
     Color color = m_renderer.m_clear_color;
-
-    uint32_t r = static_cast<uint32_t>(color.r * 255.0f) << m_canvas.rshift;
-    uint32_t g = static_cast<uint32_t>(color.g * 255.0f) << m_canvas.gshift;
-    uint32_t b = static_cast<uint32_t>(color.b * 255.0f) << m_canvas.bshift;
-    uint32_t val = r | g | b;
-
-    size_t pixel_count = size_t(m_canvas.w) * size_t(m_canvas.h);
-    size_t chunk_count = pixel_count / 8;
-    size_t chunk_rest = pixel_count % 8;
-    uint32_t* pixels = m_canvas.pixels;
-
+    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                               0,
+                               (Uint8)(color.r * 255.0f),
+                               (Uint8)(color.g * 255.0f),
+                               (Uint8)(color.b * 255.0f),
+                               255);
     __m256i vec_val = _mm256_set1_epi32((int32_t)val);
-    for (size_t i = 0; i < chunk_count; i++) {
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(pixels), vec_val);
-        pixels += 8;
-    }
+    int row_chunk_count = m_surface->w / 8;
+    int row_chunk_rest = m_surface->w % 8;
 
-    for (size_t i = 0; i < chunk_rest; i++) {
-        *pixels++ = val;
+
+    uint8_t* pixel_row = (uint8_t*)m_surface->pixels;
+    for (uint32_t y = 0; y < m_surface->h; y++) {
+        uint32_t *pixels = (uint32_t*)pixel_row;
+
+        for (int i = 0; i < row_chunk_count; i++) {
+            _mm256_store_si256((__m256i*)pixels, vec_val);
+            pixels += 8;
+        }
+        for (int i = 0; i < row_chunk_rest; i++) {
+            *pixels++ = val;
+        }
+
+        pixel_row += m_surface->pitch;
     }
 }
 
@@ -159,23 +155,27 @@ RSoftwareBackend::DrawAABB(REntity_AABB& entity)
     if (ymin < 0) {
         ymin = 0;
     }
-    if (xmax >= m_canvas.w) {
-        xmax = m_canvas.w - 1;
+    if (xmax >= m_surface->w) {
+        xmax = m_surface->w - 1;
     }
-    if (ymax >= m_canvas.h) {
-        ymax = m_canvas.h - 1;
+    if (ymax >= m_surface->h) {
+        ymax = m_surface->h - 1;
     }
 
-    uint32_t r = static_cast<uint32_t>(entity.color.r * 255.0f) << m_canvas.rshift;
-    uint32_t g = static_cast<uint32_t>(entity.color.g * 255.0f) << m_canvas.gshift;
-    uint32_t b = static_cast<uint32_t>(entity.color.b * 255.0f) << m_canvas.bshift;
-    uint32_t val = r | g | b;
+    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                               0,
+                               (Uint8)(entity.color.r * 255.0f),
+                               (Uint8)(entity.color.g * 255.0f),
+                               (Uint8)(entity.color.b * 255.0f),
+                               255);
 
+    uint8_t* pixel_row = (uint8_t*)m_surface->pixels + ymin*m_surface->pitch;
     for (int32_t y = ymin; y <= ymax; ++y) {
-        uint32_t *pixel = m_canvas.pixels + y * m_canvas.w + xmin;
+        uint32_t* pixel = (uint32_t*)(pixel_row + xmin*4);
         for (int32_t x = xmin; x <= xmax; ++x) {
             *pixel++ = val;
         }
+        pixel_row += m_surface->pitch;
     }
 }
 
@@ -247,44 +247,46 @@ RSoftwareBackend::DrawAlphaBitmap(REntity_AlphaBitmap& entity)
         cut_bot = y0;
         y0 = 0;
     }
-    if (x1 >= m_canvas.w) {
-        x1 = m_canvas.w - 1;
+    if (x1 >= m_surface->w) {
+        x1 = m_surface->w - 1;
     }
-    if (y1 >= m_canvas.h) {
-        y1 = m_canvas.h - 1;
+    if (y1 >= m_surface->h) {
+        y1 = m_surface->h - 1;
     }
 
 
     uint8_t* alpha_row = (uint8_t*)entity.bitmap.pixels.get() + (-cut_bot * entity.bitmap.w) + (-cut_left);
-    uint32_t* rgba_row = m_canvas.pixels + y0 * m_canvas.w + x0;
+    uint8_t* pixel_row = (uint8_t*)m_surface->pixels + y0 * m_surface->pitch + x0*4;
     for (int32_t y = y0; y <= y1; y++) {
         uint8_t* alpha = alpha_row;
-        uint32_t* rgba = rgba_row;
+        uint32_t* pixel = (uint32_t*)pixel_row;
+
         for (int32_t x = x0; x <= x1; x++) {
             if (*alpha == 0) {
                 alpha++;
-                rgba++;
+                pixel++;
                 continue;
             }
 
             float alphaf = *alpha / 255.0f;
-
             float r1 = entity.color.r * alphaf;
             float g1 = entity.color.g * alphaf;
             float b1 = entity.color.b * alphaf;
 
-            uint32_t r2 = static_cast<uint32_t>(r1 * 255.0f) << m_canvas.rshift;
-            uint32_t g2 = static_cast<uint32_t>(g1 * 255.0f) << m_canvas.gshift;
-            uint32_t b2 = static_cast<uint32_t>(b1 * 255.0f) << m_canvas.bshift;
-            uint32_t rgba_result = r2 | g2 | b2;
-            *rgba = rgba_result;
+            uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                                       0,
+                                       (Uint8)(r1 * 255.0f),
+                                       (Uint8)(g1 * 255.0f),
+                                       (Uint8)(b1 * 255.0f),
+                                       255);
+            *pixel = val;
 
             alpha++;
-            rgba++;
+            pixel++;
         }
 
         alpha_row += entity.bitmap.w;
-        rgba_row += m_canvas.w;
+        pixel_row += m_surface->pitch;
     }
 }
 
@@ -324,20 +326,20 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
         cut_bot = y0;
         y0 = 0;
     }
-    if (x1 >= m_canvas.w) {
-        x1 = m_canvas.w - 1;
+    if (x1 >= m_surface->w) {
+        x1 = m_surface->w - 1;
     }
-    if (y1 >= m_canvas.h) {
-        y1 = m_canvas.h - 1;
+    if (y1 >= m_surface->h) {
+        y1 = m_surface->h - 1;
     }
 
 
     uint8_t* alpha_row = (uint8_t*)glyph.bitmap.pixels.get() + (-cut_bot * glyph.bitmap.w) + (-cut_left);
-    uint32_t* rgba_row = m_canvas.pixels + y0 * m_canvas.w + x0;
+    uint8_t* rgba_row = (uint8_t*)m_surface->pixels + y0 * m_surface->pitch + x0*4;
 
     for (int32_t y = y0; y <= y1; y++) {
         uint8_t* alpha = alpha_row;
-        uint32_t* rgba = rgba_row;
+        uint32_t* rgba = (uint32_t*)rgba_row;
         for (int32_t x = x0; x <= x1; x++) {
             if (*alpha == 0) {
                 alpha++;
@@ -346,42 +348,46 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
             }
 
             float alphaf = *alpha / 255.0f;
-
             float r1 = color.r * alphaf;
             float g1 = color.g * alphaf;
             float b1 = color.b * alphaf;
 
-            uint32_t r2 = static_cast<uint32_t>(r1 * 255.0f) << m_canvas.rshift;
-            uint32_t g2 = static_cast<uint32_t>(g1 * 255.0f) << m_canvas.gshift;
-            uint32_t b2 = static_cast<uint32_t>(b1 * 255.0f) << m_canvas.bshift;
-            uint32_t rgba_result = r2 | g2 | b2;
-            *rgba = rgba_result;
+            uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                                       0,
+                                       (Uint8)(r1 * 255.0f),
+                                       (Uint8)(g1 * 255.0f),
+                                       (Uint8)(b1 * 255.0f),
+                                       255);
+            *rgba = val;
 
             alpha++;
             rgba++;
         }
 
         alpha_row += glyph.bitmap.w;
-        rgba_row += m_canvas.w;
+        rgba_row += m_surface->pitch;
     }
 }
 
 void
 RSoftwareBackend::DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, Color color)
 {
-    if (y < 0 || y >= m_canvas.h) {
+    if (y < 0 || y >= m_surface->h) {
         return;
     }
 
-    uint32_t r = static_cast<uint32_t>(color.r * 255.0f) << m_canvas.rshift;
-    uint32_t g = static_cast<uint32_t>(color.g * 255.0f) << m_canvas.gshift;
-    uint32_t b = static_cast<uint32_t>(color.b * 255.0f) << m_canvas.bshift;
-    uint32_t pixel_val = r | g | b;
+    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                               0,
+                               (Uint8)(color.r * 255.0f),
+                               (Uint8)(color.g * 255.0f),
+                               (Uint8)(color.b * 255.0f),
+                               255);
 
+    uint32_t* pixels = (uint32_t*)m_surface->pixels;
     int32_t xmin = std::max(std::min(x0, x1), 0);
-    int32_t xmax = std::min(std::max(x0, x1), m_canvas.w-1);
+    int32_t xmax = std::min(std::max(x0, x1), m_surface->w-1);
     for (int32_t x = xmin; x < xmax; x++) {
-        m_canvas.pixels[y * m_canvas.w + x] = pixel_val;
+        pixels[y * m_surface->w + x] = val;
     }
 }
 

@@ -16,8 +16,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(FSARCADE_ROOT_DIR   "${CMAKE_CURRENT_LIST_DIR}/..")
 set(FSARCADE_SRC_DIR    "${FSARCADE_ROOT_DIR}/src")
 set(IMGUI_SRC_DIR       "${FSARCADE_ROOT_DIR}/external/imgui")
-set(GLAD_SRC_DIR        "${FSARCADE_ROOT_DIR}/external/glad/src")
-set(GLAD_INC_DIR        "${FSARCADE_ROOT_DIR}/external/glad/include")
 
 
 # output directories
@@ -61,14 +59,9 @@ add_library(imgui OBJECT
     ${IMGUI_SRC_DIR}/imgui_tables.cpp
     ${IMGUI_SRC_DIR}/imgui_widgets.cpp
     ${IMGUI_SRC_DIR}/backends/imgui_impl_sdl3.cpp
-    ${IMGUI_SRC_DIR}/backends/imgui_impl_opengl3.cpp
+    ${IMGUI_SRC_DIR}/backends/imgui_impl_sdlrenderer3.cpp
 )
 target_include_directories(imgui PUBLIC ${IMGUI_SRC_DIR} ${IMGUI_SRC_DIR}/backends)
-
-
-# glad
-add_library(glad STATIC ${GLAD_SRC_DIR}/gl.c)
-target_include_directories(glad PUBLIC ${GLAD_INC_DIR})
 
 
 # stb
@@ -76,5 +69,5 @@ add_library(stb_truetype STATIC ${FSARCADE_ROOT_DIR}/external/stb/stb_truetype.c
 target_include_directories(stb_truetype PUBLIC ${FSARCADE_ROOT_DIR}/external/stb)
 
 
-target_link_libraries(fsarcade SDL3::SDL3 GL glad dl imgui stb_truetype)
+target_link_libraries(fsarcade SDL3::SDL3 dl imgui stb_truetype)
 
