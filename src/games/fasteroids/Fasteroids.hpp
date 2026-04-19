@@ -1,19 +1,26 @@
 #pragma once
 
 #include "games/Game.hpp"
+#include "renderer/Renderer.hpp"
 
 struct Spaceship {
+    Spaceship();
+    void Draw();
+
     V2F32 m_pos;
-    V2F32 m_ori;
+    float m_ori;
+    Mesh m_mesh;
 };
 
 struct Asteroid {
     V2F32 m_pos;
-    V2F32 m_ori;
+    float m_ori;
+    Mesh m_mesh;
 };
 
 class Fasteroids : public Game {
 public:
+    Fasteroids() = default;
     void Start() override;
     void ProcessEvent(SDL_Event& event) override;
     void Update(float dt) override;
