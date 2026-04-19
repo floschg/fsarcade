@@ -22,6 +22,9 @@ private:
     void DrawAlphaBitmap(REntity_AlphaBitmap& entity);
     void DrawFrameString32(REntity_String32& entity);
     void DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int32_t yscreen);
+    void DrawMesh(REntity_Mesh& entity);
+
+    void DrawTriangle(float* vertices, Color color);
 
     void DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, Color color);
 

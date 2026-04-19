@@ -17,13 +17,19 @@ class Renderer;
 extern Renderer g_renderer;
 
 
+struct Mesh {
+    std::vector<float> m_vertices;
+    std::vector<uint32_t> m_indices;
+};
+
+
 enum class REntityType : int32_t {
     AABB,
     AlphaBitmap,
     Circle,
     Text,
+    Mesh
 };
-
 
 struct REntity_AlphaBitmap {
     REntityType type;
@@ -59,6 +65,15 @@ struct REntity_String32 {
     Color color;
 };
 
+struct REntity_Mesh {
+    REntityType type;
+    Mesh& mesh;
+    V2F32 pos;
+    uint32_t z;
+    float angle;
+    Color color;
+};
+
 
 union REntity {
     REntityType type;
@@ -66,6 +81,7 @@ union REntity {
     REntity_AABB aabb;
     REntity_Circle circle;
     REntity_String32 string32;
+    REntity_Mesh mesh;
 };
 
 struct RSortEntry {
@@ -92,6 +108,7 @@ public:
     void PushAABB(AABB aabb, Color color, uint32_t z);
     void PushCircle(Circle circle, Color color, uint32_t z);
     void PushString32(String32Id id, Font& font, V2F32 pos, Color color, uint32_t z);
+    void PushMesh(Mesh& mesh, V2F32 pos, uint32_t z, float ori, Color color);
 
 
     /* helper functions */

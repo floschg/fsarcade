@@ -59,6 +59,10 @@ RSoftwareBackend::Draw()
             DrawCircle(entity.circle);
         }; break;
 
+        case REntityType::Mesh: {
+            DrawMesh(entity.mesh);
+        }; break;
+
         default:;
         }
     }
@@ -310,6 +314,7 @@ RSoftwareBackend::DrawFrameString32(REntity_String32& entity)
 void
 RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int32_t yscreen)
 {
+    // Todo: Why not just call DrawAlphaBitmap????
     int32_t x0 = xscreen;
     int32_t y0 = yscreen;
     int32_t x1 = x0 + glyph.bitmap.w - 1;
@@ -366,6 +371,74 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
 
         alpha_row += glyph.bitmap.w;
         rgba_row += m_surface->pitch;
+    }
+}
+
+void
+RSoftwareBackend::DrawTriangle(float* vertices, Color color)
+{
+    V2F32 v0 = {vertices[0], vertices[1]};
+    V2F32 v1 = {vertices[2], vertices[3]};
+    V2F32 v2 = {vertices[4], vertices[5]};
+    if (v1.y < v0.y) {
+        std::swap(v1, v0);
+    }
+    if (v2.y < v0.y) {
+        std::swap(v2, v0);
+    }
+    if (v2.y < v1.y) {
+        std::swap(v2, v1);
+    }
+
+    V2I32 pos0 = {m_renderer.WorldXToScreenX(v0.x), m_renderer.WorldYToScreenY(v0.y)};
+    V2I32 pos1 = {m_renderer.WorldXToScreenX(v1.x), m_renderer.WorldYToScreenY(v1.y)};
+    V2I32 pos2 = {m_renderer.WorldXToScreenX(v2.x), m_renderer.WorldYToScreenY(v2.y)};
+
+    float dist01 = float(pos1.y - pos0.y);
+    float dist12 = float(pos2.y - pos1.y);
+    float dist02 = float(pos2.y - pos0.y);
+
+    // @Speed: precompute delta-x's
+    // @Incomplete: draw topmost line (y = pos2.y); Take care of not dividing by 0.
+
+    int32_t y = pos0.y;
+    while (y < pos1.y) {
+        float y01_progress = 1.0f - (float)(pos1.y - y) / dist01;
+        float y02_progress = 1.0f - (float)(pos2.y - y) / dist02;
+        int32_t x01 = pos0.x + (int)(y01_progress * (float(pos1.x - pos0.x)));
+        int32_t x02 = pos0.x + (int)(y02_progress * (float(pos2.x - pos0.x)));
+        DrawHorizontalLine_Screen(x01, x02, y, color);
+        y++;
+    }
+    while (y < pos2.y) {
+        float y12_progress = 1.0f - (float)(pos2.y - y) / dist12;
+        float y02_progress = 1.0f - (float)(pos2.y - y) / dist02;
+        int32_t x12 = pos1.x + (int)(y12_progress * (float(pos2.x - pos1.x)));
+        int32_t x02 = pos0.x + (int)(y02_progress * (float(pos2.x - pos0.x)));
+        DrawHorizontalLine_Screen(x12, x02, y, color);
+        y++;
+    }
+}
+
+void
+RSoftwareBackend::DrawMesh(REntity_Mesh& entity)
+{
+    float* mesh_vertices = entity.mesh.m_vertices.data();
+
+    // 1) apply translation & draw
+    for (size_t i = 0; i < entity.mesh.m_indices.size(); i+=3) {
+        uint32_t* indices = &entity.mesh.m_indices.data()[i*3];
+        float vertices[6] = {
+            entity.pos.x + mesh_vertices[indices[0]*2 + 0],
+            entity.pos.y + mesh_vertices[indices[0]*2 + 1],
+
+            entity.pos.x + mesh_vertices[indices[1]*2 + 0],
+            entity.pos.y + mesh_vertices[indices[1]*2 + 1],
+
+            entity.pos.x + mesh_vertices[indices[2]*2 + 0],
+            entity.pos.y + mesh_vertices[indices[2]*2 + 1],
+        };
+        DrawTriangle(vertices, entity.color);
     }
 }
 

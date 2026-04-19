@@ -130,4 +130,17 @@ Renderer::PushString32(String32Id id, Font& font, V2F32 pos, Color color, uint32
     m_sort_entries.emplace_back(z, m_render_entities.size()-1);
 }
 
+void
+Renderer::PushMesh(Mesh& mesh, V2F32 pos, uint32_t z, float ori, Color color)
+{
+    m_render_entities.emplace_back(REntity{.mesh{
+        REntityType::Mesh,
+        mesh,
+        pos,
+        z,
+        ori,
+        color
+    }});
+    m_sort_entries.emplace_back(z, m_render_entities.size()-1);
+}
 
