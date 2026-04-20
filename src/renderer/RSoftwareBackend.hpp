@@ -30,6 +30,10 @@ private:
 
 
 private:
+    uint32_t MapRGB(float r, float g, float b);
+
+
+private:
     Renderer& m_renderer;
     SDL_Texture* m_texture = 0;
     SDL_Surface* m_surface = 0;

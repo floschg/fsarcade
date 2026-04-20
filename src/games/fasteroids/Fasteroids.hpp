@@ -5,10 +5,13 @@
 
 struct Spaceship {
     Spaceship();
+    void BoostForward();
+    void Update(float dt);
     void Draw();
 
     V2F32 m_pos;
-    float m_ori;
+    float m_angle;
+    float m_speed_prop;
     Mesh m_mesh;
 };
 

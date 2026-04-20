@@ -1,17 +1,19 @@
 #include "common/MemoryManager.hpp"
+#include "common/math.hpp"
 #include "renderer/Renderer.hpp"
 #include "renderer/RSoftwareBackend.hpp"
 
 #include <SDL3/SDL.h>
-
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_pixels.h>
+
 #include <algorithm>
+#include <immintrin.h>
 #include <cstdlib>
 #include <cstdio>
-#include <immintrin.h>
+#include <cmath>
 
 
 RSoftwareBackend::RSoftwareBackend(Renderer& renderer)
@@ -78,30 +80,30 @@ RSoftwareBackend::Draw()
 void
 RSoftwareBackend::Resize(int32_t w, int32_t h)
 {
-    if (m_surface) {
-        void* pixels = m_surface->pixels;
-
-        SDL_DestroySurface(m_surface);
-        m_surface = 0;
-
-        _mm_free(pixels);
-    }
-
+    int alignment = 32;
     int bytes_per_pixel = 4;
+
     int pitch_unaligned = w * bytes_per_pixel;
-    int pitch = (pitch_unaligned + 31) & ~31;
+    int pitch = (pitch_unaligned + alignment-1) & ~(alignment-1);
     int size = h * pitch;
 
-    void* pixels = _mm_malloc(size_t(size), 32);
+    void* pixels = _mm_malloc((size_t)size, (size_t)alignment);
     SDL_Surface* surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_ARGB8888, pixels, pitch);
     if (!surface) {
-        printf("SDL_CreateSurface failed on Resize\n");
-        exit(0);
+        printf("SDL_CreateSurfaceFrom failed on Resize\n");
+        _mm_free(pixels);
+        return;
     }
-    m_surface = surface;
+    if (m_surface) {
+        void* old_pixels = m_surface->pixels;
+        SDL_DestroySurface(m_surface);
+        _mm_free(old_pixels);
+        m_surface = 0;
+    }
 
-    assert(((uint64_t)pixels & 0b11111) == 0);
-    assert(m_surface->pitch % 32 == 0);
+    m_surface = surface;
+    assert((uint64_t)m_surface->pixels % (uint64_t)alignment == 0);
+    assert(m_surface->pitch % alignment == 0);
 }
 
 void
@@ -118,12 +120,7 @@ void
 RSoftwareBackend::DrawClear()
 {
     Color color = m_renderer.m_clear_color;
-    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
-                               0,
-                               (Uint8)(color.r * 255.0f),
-                               (Uint8)(color.g * 255.0f),
-                               (Uint8)(color.b * 255.0f),
-                               255);
+    uint32_t val = MapRGB(color.r, color.g, color.b);
     __m256i vec_val = _mm256_set1_epi32((int32_t)val);
     int row_chunk_count = m_surface->w / 8;
     int row_chunk_rest = m_surface->w % 8;
@@ -166,12 +163,7 @@ RSoftwareBackend::DrawAABB(REntity_AABB& entity)
         ymax = m_surface->h - 1;
     }
 
-    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
-                               0,
-                               (Uint8)(entity.color.r * 255.0f),
-                               (Uint8)(entity.color.g * 255.0f),
-                               (Uint8)(entity.color.b * 255.0f),
-                               255);
+    uint32_t val = MapRGB(entity.color.r, entity.color.g, entity.color.b);
 
     uint8_t* pixel_row = (uint8_t*)m_surface->pixels + ymin*m_surface->pitch;
     for (int32_t y = ymin; y <= ymax; ++y) {
@@ -277,12 +269,7 @@ RSoftwareBackend::DrawAlphaBitmap(REntity_AlphaBitmap& entity)
             float g1 = entity.color.g * alphaf;
             float b1 = entity.color.b * alphaf;
 
-            uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
-                                       0,
-                                       (Uint8)(r1 * 255.0f),
-                                       (Uint8)(g1 * 255.0f),
-                                       (Uint8)(b1 * 255.0f),
-                                       255);
+            uint32_t val = MapRGB(r1, g1, b1);
             *pixel = val;
 
             alpha++;
@@ -357,12 +344,7 @@ RSoftwareBackend::DrawTextGlyph(Glyph& glyph, Color color, int32_t xscreen, int3
             float g1 = color.g * alphaf;
             float b1 = color.b * alphaf;
 
-            uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
-                                       0,
-                                       (Uint8)(r1 * 255.0f),
-                                       (Uint8)(g1 * 255.0f),
-                                       (Uint8)(b1 * 255.0f),
-                                       255);
+            uint32_t val = MapRGB(r1, g1, b1);
             *rgba = val;
 
             alpha++;
@@ -424,20 +406,32 @@ void
 RSoftwareBackend::DrawMesh(REntity_Mesh& entity)
 {
     float* mesh_vertices = entity.mesh.m_vertices.data();
+    float a = entity.angle;
 
-    // 1) apply translation & draw
+    // Todo: use quaternions
+    Mat4x4 rotation_z = {
+        {std::cos(a), -std::sin(a), 0.0f, 0.0f},
+        {std::sin(a),  std::cos(a), 0.0f, 0.0f},
+        {0.0f,        0.0f,         1.0f, 0.0f},
+        {0.0f,        0.0f,         0.0f, 1.0f},
+    };
+    Mat4x4 translation = {
+        {1.0f, 0.0f, 0.0f, entity.pos.x},
+        {0.0f, 1.0f, 0.0f, entity.pos.y},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+    Mat4x4 transform;
+    mat4x4_dot_mat4x4(translation, rotation_z, transform);
+
     for (size_t i = 0; i < entity.mesh.m_indices.size(); i+=3) {
         uint32_t* indices = &entity.mesh.m_indices.data()[i*3];
-        float vertices[6] = {
-            entity.pos.x + mesh_vertices[indices[0]*2 + 0],
-            entity.pos.y + mesh_vertices[indices[0]*2 + 1],
-
-            entity.pos.x + mesh_vertices[indices[1]*2 + 0],
-            entity.pos.y + mesh_vertices[indices[1]*2 + 1],
-
-            entity.pos.x + mesh_vertices[indices[2]*2 + 0],
-            entity.pos.y + mesh_vertices[indices[2]*2 + 1],
-        };
+        float vertices[6];
+        V2F32* mesh_positions = (V2F32*)mesh_vertices;
+        V2F32* result_positions = (V2F32*)vertices;
+        result_positions[0] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[0]]);
+        result_positions[1] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[1]]);
+        result_positions[2] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[2]]);
         DrawTriangle(vertices, entity.color);
     }
 }
@@ -449,12 +443,7 @@ RSoftwareBackend::DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, C
         return;
     }
 
-    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
-                               0,
-                               (Uint8)(color.r * 255.0f),
-                               (Uint8)(color.g * 255.0f),
-                               (Uint8)(color.b * 255.0f),
-                               255);
+    uint32_t val = MapRGB(color.r, color.g, color.b);
 
     uint32_t* pixels = (uint32_t*)m_surface->pixels;
     int32_t xmin = std::max(std::min(x0, x1), 0);
@@ -462,5 +451,17 @@ RSoftwareBackend::DrawHorizontalLine_Screen(int32_t x0, int32_t x1, int32_t y, C
     for (int32_t x = xmin; x < xmax; x++) {
         pixels[y * m_surface->w + x] = val;
     }
+}
+
+uint32_t
+RSoftwareBackend::MapRGB(float r, float g, float b)
+{
+    uint32_t val = SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format),
+                               0,
+                               (Uint8)(r * 255.0f),
+                               (Uint8)(g * 255.0f),
+                               (Uint8)(b * 255.0f),
+                               255);
+    return val;
 }
 
