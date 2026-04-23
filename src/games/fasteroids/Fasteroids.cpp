@@ -1,14 +1,9 @@
 #include "games/fasteroids/Fasteroids.hpp"
+#include "common/math.hpp"
 #include "renderer/Renderer.hpp"
 
-#include <cmath>
 
-
-static constexpr uint32_t k_z_bg = 1;
-static constexpr uint32_t k_z_ship = 2;
-static constexpr uint32_t k_z_asteroids = 3;
 static constexpr float k_pi = static_cast<float>(std::numbers::pi);
-static constexpr float k_pi2 = k_pi*2;
 
 
 std::unique_ptr<Game>
@@ -17,69 +12,13 @@ Game::CreateFasteroids()
     return std::make_unique<Fasteroids>();
 }
 
-
-Spaceship::Spaceship()
-{
-    float half_w = 0.1f;
-    float half_h = 0.2f;
-    float vertices[] = {
-        -half_w, -half_h,
-         half_w, -half_h,
-        0.0f,     half_h
-    };
-
-    size_t vertex_count = sizeof(vertices)/sizeof(vertices[0]);
-    m_mesh.m_vertices.reserve(vertex_count);
-    for (size_t i = 0; i < vertex_count; i++) {
-        m_mesh.m_vertices.push_back(vertices[i]);
-    }
-
-    uint32_t indices[] = {
-        0, 1, 2
-    };
-    size_t index_count = sizeof(indices)/sizeof(indices[0]);
-    m_mesh.m_indices.reserve(index_count);
-    for (size_t i = 0; i < index_count; i++) {
-        m_mesh.m_indices.push_back(indices[i]);
-    }
-}
-
-void
-Spaceship::BoostForward()
-{
-    m_speed_prop = 1.0f;
-}
-
-void
-Spaceship::Update(float dt)
-{
-    float speed = 0.8f;
-    if (m_speed_prop >= 0.0f) {
-        m_pos.x += m_speed_prop * speed * dt * std::cosf(m_angle + k_pi/2);
-        m_pos.y += m_speed_prop * speed * dt * std::sinf(m_angle + k_pi/2);
-        m_speed_prop -= 0.005f;
-    }
-
-    if (m_speed_prop < 0.0f) {
-        m_speed_prop = 0.0f;
-    }
-}
-
-void
-Spaceship::Draw()
-{
-    Color color = {0.4f, 0.4f, 0.4f};
-    g_renderer.PushMesh(m_mesh, m_pos, k_z_ship, m_angle, color);
-}
-
-
 void
 Fasteroids::Start()
 {
     g_renderer.SetCameraSize(4.0f, 3.0f);
 
-    m_ship.m_pos = {2.0f, 2.0f};
-    m_ship.m_angle = 0.0f;
+    m_asteroids.clear();
+    m_asteroids.push_back(Asteroid());
 
     m_game_status = game_resume;
 }
@@ -91,22 +30,16 @@ Fasteroids::ProcessEvent(SDL_Event& event)
     case SDL_EVENT_KEY_DOWN: {
         SDL_Keycode keycode = event.key.key;
         if (keycode == SDLK_LEFT) {
-            m_ship.m_angle += k_pi/32;
-            while (m_ship.m_angle > k_pi2) {
-                m_ship.m_angle -= k_pi2;
-            }
+            m_ship.RotateCounterClockwise(k_pi/32);
         }
         else if (keycode == SDLK_RIGHT) {
-            m_ship.m_angle -= k_pi/32;
-            while (m_ship.m_angle < -k_pi2) {
-                m_ship.m_angle += k_pi2;
-            }
+            m_ship.RotateClockwise(k_pi/32);
         }
         else if (keycode == SDLK_UP) {
             m_ship.BoostForward();
         }
         else if (keycode == SDLK_SPACE) {
-            // Todo: shoot laser
+            m_lazers.emplace_back(m_ship.ShootLazer());
         }
     }
     }
@@ -116,6 +49,33 @@ void
 Fasteroids::Update(float dt)
 {
     m_ship.Update(dt);
+
+    for (Lazer& lazer : m_lazers) {
+        lazer.Update(dt);
+    }
+
+    AABB aabb_world = {
+        0.0f, 0.0f,
+        4.0f, 3.0f
+    };
+
+    auto it = m_lazers.begin();
+    while (it < m_lazers.end()) {
+        while (it < m_lazers.end()) {
+            if (!Intersect_AABB_Circle(aabb_world, it->circle)) {
+                std::iter_swap(it, m_lazers.end()-1);
+                m_lazers.pop_back();
+            }
+            else {
+                break;
+            }
+        }
+        it++;
+    }
+
+    for (Asteroid& asteroid : m_asteroids) {
+        asteroid.Update(dt);
+    }
 }
 
 void
@@ -127,16 +87,12 @@ Fasteroids::Draw()
 
     m_ship.Draw();
 
-
-    Color asteroid_color = {0.5f, 0.3f, 0.6f};
     for (Asteroid& asteroid : m_asteroids) {
-        AABB asteroid_aabb = {
-            asteroid.m_pos.x,
-            asteroid.m_pos.y,
-            asteroid.m_pos.x + 0.2f,
-            asteroid.m_pos.y + 0.2f,
-        };
-        g_renderer.PushAABB(asteroid_aabb, asteroid_color, k_z_asteroids);
+        asteroid.Draw();
+    }
+
+    for (Lazer& lazer : m_lazers) {
+        lazer.Draw();
     }
 }
 

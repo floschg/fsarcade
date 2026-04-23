@@ -125,7 +125,6 @@ struct DrawClearMultithreadedData {
     int row_chunk_rest;
     uint32_t color_val;
     __m256i color_vec;
-
 };
 
 static void
@@ -137,8 +136,8 @@ DrawClearMultithreaded(void* _data)
     int row_count = data->row_count;
     int row_chunk_count = data->row_chunk_count;
     int row_chunk_rest = data->row_chunk_rest;
-    __m256i color_vec = data->color_vec;
     uint32_t color_val = data->color_val;
+    __m256i color_vec = data->color_vec;
 
     for (int y = 0; y < row_count; y++) {
         uint32_t *pixels = (uint32_t*)pixel_row;
@@ -470,7 +469,6 @@ RSoftwareBackend::DrawTriangle(float* vertices, Color color)
 void
 RSoftwareBackend::DrawMesh(REntity_Mesh& entity)
 {
-    float* mesh_vertices = entity.mesh.m_vertices.data();
     float a = entity.angle;
 
     // Todo: use quaternions
@@ -489,15 +487,15 @@ RSoftwareBackend::DrawMesh(REntity_Mesh& entity)
     Mat4x4 transform;
     mat4x4_dot_mat4x4(translation, rotation_z, transform);
 
+    V2F32* positions = (V2F32*)entity.mesh.m_vertices.data();
+    uint32_t* indices = entity.mesh.m_indices.data();
     for (size_t i = 0; i < entity.mesh.m_indices.size(); i+=3) {
-        uint32_t* indices = &entity.mesh.m_indices.data()[i*3];
-        float vertices[6];
-        V2F32* mesh_positions = (V2F32*)mesh_vertices;
-        V2F32* result_positions = (V2F32*)vertices;
-        result_positions[0] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[0]]);
-        result_positions[1] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[1]]);
-        result_positions[2] = mat4x4_dot_v2f32(transform, &mesh_positions[indices[2]]);
-        DrawTriangle(vertices, entity.color);
+
+        V2F32 result_positions[3];
+        result_positions[0] = mat4x4_dot_v2f32(transform, &positions[indices[i+0]]);
+        result_positions[1] = mat4x4_dot_v2f32(transform, &positions[indices[i+1]]);
+        result_positions[2] = mat4x4_dot_v2f32(transform, &positions[indices[i+2]]);
+        DrawTriangle((float*)result_positions, entity.color);
     }
 }
 
