@@ -25,7 +25,7 @@ Fasteroids::Start()
     m_is_rotate_clockwise = false;
     m_is_rotate_anticlockwise = false;
 
-    m_asteroid_spawn_time_left = 1.0f;
+    m_asteroid_spawn_time_left = k_asteroid_spawn_timer;
 
     m_game_status = game_resume;
 }
@@ -103,7 +103,7 @@ Fasteroids::MaybeSpawnAsteroid(float dt)
     time_left -= dt;
     if (time_left <= 0.0f) {
         m_asteroids.emplace_back(Asteroid());
-        m_asteroid_spawn_time_left = 1.0f;
+        m_asteroid_spawn_time_left = k_asteroid_spawn_timer;
     }
     else {
         m_asteroid_spawn_time_left = time_left;
@@ -113,15 +113,20 @@ Fasteroids::MaybeSpawnAsteroid(float dt)
 void
 Fasteroids::DespawnDistantLazers()
 {
-    AABB aabb_camera = {
-        0.0f, 0.0f,
-        4.0f, 3.0f
+    // Todo: don't hardcode this
+    float dist = 5.0f;
+    AABB aabb = {
+        0.0f - dist,
+        0.0f - dist,
+        4.0f + dist,
+        3.0f + dist
     };
 
     auto it = m_lazers.begin();
     while (it < m_lazers.end()) {
         while (it < m_lazers.end()) {
-            if (!Intersect_AABB_Circle(aabb_camera, it->circle)) {
+            V2F32 pos = {it->circle.x, it->circle.y};
+            if (!v2f32_inside_aabb(pos, aabb)) {
                 std::iter_swap(it, m_lazers.end()-1);
                 m_lazers.pop_back();
             }
@@ -137,25 +142,20 @@ Fasteroids::DespawnDistantLazers()
 void
 Fasteroids::DespawnDistantAsteroids()
 {
-    AABB aabb_camera = {
-        0.0f, 0.0f,
-        4.0f, 3.0f
+    // Todo: don't hardcode this
+    float dist = 5.0f;
+    AABB aabb = {
+        0.0f - dist,
+        0.0f - dist,
+        4.0f + dist,
+        3.0f + dist
     };
 
     auto it = m_asteroids.begin();
     while (it < m_asteroids.end()) {
         while (it < m_asteroids.end()) {
-            // temporary hack, instead do:
-            // - have larger world with a smaller camera.
-            // - just decide if pos is outside world
-            float r = 2.0f * std::max(aabb_camera.x1, aabb_camera.y1);
             V2F32 pos = it->GetPos();
-            Circle circle = {
-                .x = pos.x,
-                .y = pos.y,
-                .r = r
-            };
-            if (!Intersect_AABB_Circle(aabb_camera, circle)) {
+            if (!v2f32_inside_aabb(pos, aabb)) {
                 std::iter_swap(it, m_asteroids.end()-1);
                 m_asteroids.pop_back();
             }

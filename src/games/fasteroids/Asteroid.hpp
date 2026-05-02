@@ -15,8 +15,10 @@ public:
 
 private:
     V2F32 m_pos;
+    float m_angle_ori;
+    float m_angle_move;
+    float m_angle_spin;
     float m_speed;
-    float m_angle;
     Mesh m_mesh;
 };
 

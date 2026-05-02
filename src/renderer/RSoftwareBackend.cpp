@@ -487,15 +487,14 @@ RSoftwareBackend::DrawMesh(REntity_Mesh& entity)
     Mat4x4 transform;
     mat4x4_dot_mat4x4(translation, rotation_z, transform);
 
-    V2F32* positions = (V2F32*)entity.mesh.m_vertices.data();
+    V2F32* mesh_positions = (V2F32*)entity.mesh.m_vertices.data();
     uint32_t* indices = entity.mesh.m_indices.data();
     for (size_t i = 0; i < entity.mesh.m_indices.size(); i+=3) {
-
-        V2F32 result_positions[3];
-        result_positions[0] = mat4x4_dot_v2f32(transform, &positions[indices[i+0]]);
-        result_positions[1] = mat4x4_dot_v2f32(transform, &positions[indices[i+1]]);
-        result_positions[2] = mat4x4_dot_v2f32(transform, &positions[indices[i+2]]);
-        DrawTriangle((float*)result_positions, entity.color);
+        V2F32 positions[3];
+        mat4x4_dot_v2f32(transform, &mesh_positions[indices[i+0]], &positions[0]);
+        mat4x4_dot_v2f32(transform, &mesh_positions[indices[i+1]], &positions[1]);
+        mat4x4_dot_v2f32(transform, &mesh_positions[indices[i+2]], &positions[2]);
+        DrawTriangle((float*)positions, entity.color);
     }
 }
 

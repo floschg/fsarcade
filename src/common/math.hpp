@@ -6,6 +6,10 @@
 #include <cassert>
 
 
+static constexpr float k_pi = static_cast<float>(std::numbers::pi);
+static constexpr float k_pi2 = 2.0f * k_pi;
+
+
 struct V2ST {
     size_t x;
     size_t y;
@@ -53,16 +57,14 @@ struct V2I32 {
 
 typedef float Mat4x4[4][4];
 
-inline V2F32
-mat4x4_dot_v2f32(Mat4x4 mat, V2F32* pos)
+inline void
+mat4x4_dot_v2f32(Mat4x4 mat, V2F32* vec_in, V2F32* vec_out)
 {
-    float x = pos->x;
-    float y = pos->y;
+    float x = vec_in->x;
+    float y = vec_in->y;
 
-    V2F32 result;
-    result.x = mat[0][0]*x + mat[0][1]*y + mat[0][2]*0.0f + mat[0][3]*1.0f;
-    result.y = mat[1][0]*x + mat[1][1]*y + mat[1][2]*0.0f + mat[1][3]*1.0f;
-    return result;
+    vec_out->x = mat[0][0]*x + mat[0][1]*y + mat[0][2]*0.0f + mat[0][3]*1.0f;
+    vec_out->y = mat[1][0]*x + mat[1][1]*y + mat[1][2]*0.0f + mat[1][3]*1.0f;
 };
 
 inline void
@@ -127,5 +129,32 @@ Intersect_AABB_Circle(AABB aabb, Circle circle)
 
     bool is_intersect = d_sq <= r_sq;
     return is_intersect;
+}
+
+inline bool
+v2f32_inside_aabb(V2F32 vec, AABB aabb)
+{
+    assert(aabb.x0 <= aabb.x1);
+    assert(aabb.y0 <= aabb.y1);
+
+    if (vec.x <= aabb.x0) return false;
+    if (vec.x >= aabb.x1) return false;
+    if (vec.y <= aabb.y0) return false;
+    if (vec.y >= aabb.y1) return false;
+    return true;
+}
+
+inline float
+rad_to_deg(float rad)
+{
+    float deg = (180.f / k_pi) * rad;
+    return deg;
+}
+
+inline float
+deg_to_rad(float deg)
+{
+    float rad = (k_pi / 180.f) * deg;
+    return rad;
 }
 

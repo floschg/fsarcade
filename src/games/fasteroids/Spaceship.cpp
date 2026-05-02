@@ -4,10 +4,6 @@
 #include <cmath>
 
 
-static constexpr float k_pi = static_cast<float>(std::numbers::pi);
-static constexpr float k_pi2 = k_pi*2;
-
-
 Spaceship::Spaceship()
 {
     float half_w = 0.1f;
@@ -38,8 +34,9 @@ Spaceship::Spaceship()
 void
 Spaceship::Reset()
 {
-    m_pos = {2.0f, 2.0f};
+    m_pos = {2.0f, 1.5f};
     m_angle = 0.0f;
+    m_speed_prop = 0.0f;
 }
 
 void
@@ -100,7 +97,6 @@ Spaceship::ShootLazer()
     float r = 0.05f;
 
 
-    // find mesh positions, and rotate them to fit
     float a = m_angle;
     Mat4x4 rotation_z = {
         {std::cos(a), -std::sin(a), 0.0f, 0.0f},
@@ -110,7 +106,8 @@ Spaceship::ShootLazer()
     };
     assert(m_mesh.m_vertices.size() == 6);
     V2F32* rel_pos_unrotated = (V2F32*)&m_mesh.m_vertices[4];
-    V2F32  rel_pos_rotated = mat4x4_dot_v2f32(rotation_z, rel_pos_unrotated);
+    V2F32  rel_pos_rotated;
+    mat4x4_dot_v2f32(rotation_z, rel_pos_unrotated, &rel_pos_rotated);
 
     V2F32 pos = {
         m_pos.x + rel_pos_rotated.x,

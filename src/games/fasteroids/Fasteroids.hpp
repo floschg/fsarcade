@@ -19,6 +19,9 @@ public:
     static constexpr uint32_t k_z_lazer = 3;
 
 private:
+    static constexpr float k_asteroid_spawn_timer = 0.8f;
+
+private:
     void MaybeSpawnAsteroid(float dt);
     void DespawnDistantLazers();
     void DespawnDistantAsteroids();
